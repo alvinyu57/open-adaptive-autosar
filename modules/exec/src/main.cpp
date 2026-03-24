@@ -6,11 +6,11 @@
 namespace {
 
 class DiagnosticsApp final : public openaa::core::Application {
-public:
+  public:
     DiagnosticsApp() : openaa::core::Application("diagnostics.stub") {}
 
-private:
-    void OnInitialize(openaa::core::RuntimeContext& context) override {
+  private:
+    void OnInitialize(openaa::core::RuntimeContext &context) override {
         context.Log().Info(Name(), "Initialize diagnostics service");
         context.Services().Register({
             .service_id = "openaa.exec.diagnostics",
@@ -19,16 +19,16 @@ private:
         });
     }
 
-    void OnStart(openaa::core::RuntimeContext& context) override {
+    void OnStart(openaa::core::RuntimeContext &context) override {
         context.Log().Info(Name(), "Diagnostics service ready");
     }
 
-    void OnStop(openaa::core::RuntimeContext& context) override {
+    void OnStop(openaa::core::RuntimeContext &context) override {
         context.Log().Info(Name(), "Diagnostics service stopped");
     }
 };
 
-}  // namespace
+} // namespace
 
 int main() {
     openaa::core::Logger logger(std::cout);

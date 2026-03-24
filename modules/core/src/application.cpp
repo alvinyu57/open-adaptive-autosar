@@ -26,9 +26,9 @@ std::string TimestampNow() {
     return buffer.str();
 }
 
-}  // namespace
+} // namespace
 
-Logger::Logger(std::ostream& output) : output_(&output) {}
+Logger::Logger(std::ostream &output) : output_(&output) {}
 
 void Logger::Info(std::string_view component, std::string_view message) const {
     (*output_) << "[" << TimestampNow() << "] [INFO] [" << component << "] " << message << '\n';
@@ -50,27 +50,27 @@ std::vector<ServiceRegistry::ServiceEntry> ServiceRegistry::List() const {
     std::vector<ServiceEntry> entries;
     entries.reserve(services_.size());
 
-    for (const auto& [_, entry] : services_) {
+    for (const auto &[_, entry] : services_) {
         entries.push_back(entry);
     }
 
     return entries;
 }
 
-RuntimeContext::RuntimeContext(ServiceRegistry& registry, Logger& logger)
+RuntimeContext::RuntimeContext(ServiceRegistry &registry, Logger &logger)
     : registry_(&registry), logger_(&logger) {}
 
-ServiceRegistry& RuntimeContext::Services() const {
+ServiceRegistry &RuntimeContext::Services() const {
     return *registry_;
 }
 
-Logger& RuntimeContext::Log() const {
+Logger &RuntimeContext::Log() const {
     return *logger_;
 }
 
 Application::Application(std::string name) : name_(std::move(name)) {}
 
-void Application::Initialize(RuntimeContext& context) {
+void Application::Initialize(RuntimeContext &context) {
     if (state_ != ApplicationState::kCreated) {
         throw std::logic_error("Application can only be initialized once");
     }
@@ -79,7 +79,7 @@ void Application::Initialize(RuntimeContext& context) {
     state_ = ApplicationState::kInitialized;
 }
 
-void Application::Run(RuntimeContext& context) {
+void Application::Run(RuntimeContext &context) {
     if (state_ != ApplicationState::kInitialized) {
         throw std::logic_error("Application must be initialized before running");
     }
@@ -88,7 +88,7 @@ void Application::Run(RuntimeContext& context) {
     state_ = ApplicationState::kRunning;
 }
 
-void Application::Stop(RuntimeContext& context) {
+void Application::Stop(RuntimeContext &context) {
     if (state_ == ApplicationState::kStopped || state_ == ApplicationState::kCreated) {
         return;
     }
@@ -97,7 +97,7 @@ void Application::Stop(RuntimeContext& context) {
     state_ = ApplicationState::kStopped;
 }
 
-const std::string& Application::Name() const {
+const std::string &Application::Name() const {
     return name_;
 }
 
@@ -105,4 +105,4 @@ ApplicationState Application::State() const {
     return state_;
 }
 
-}  // namespace openaa::core
+} // namespace openaa::core

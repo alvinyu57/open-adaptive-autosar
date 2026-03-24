@@ -9,7 +9,7 @@
 namespace {
 
 class RecordingApplication final : public openaa::core::Application {
-public:
+  public:
     RecordingApplication() : openaa::core::Application("tests.unit.recording") {}
 
     bool initialized{false};
@@ -17,8 +17,8 @@ public:
     bool stopped{false};
     std::size_t registered_services{0U};
 
-private:
-    void OnInitialize(openaa::core::RuntimeContext& context) override {
+  private:
+    void OnInitialize(openaa::core::RuntimeContext &context) override {
         initialized = true;
         const bool inserted = context.Services().Register({
             .service_id = "tests.unit.recording.service",
@@ -33,11 +33,11 @@ private:
         registered_services = context.Services().List().size();
     }
 
-    void OnStart(openaa::core::RuntimeContext&) override {
+    void OnStart(openaa::core::RuntimeContext &) override {
         started = true;
     }
 
-    void OnStop(openaa::core::RuntimeContext&) override {
+    void OnStop(openaa::core::RuntimeContext &) override {
         stopped = true;
     }
 };
@@ -108,4 +108,4 @@ TEST(ApplicationTest, StopBeforeInitializationIsANoop) {
     EXPECT_EQ(application.State(), openaa::core::ApplicationState::kCreated);
 }
 
-}  // namespace
+} // namespace

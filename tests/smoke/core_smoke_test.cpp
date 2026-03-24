@@ -9,11 +9,11 @@
 namespace {
 
 class TestApp final : public openaa::core::Application {
-public:
+  public:
     TestApp() : openaa::core::Application("tests.smoke") {}
 
-private:
-    void OnInitialize(openaa::core::RuntimeContext& context) override {
+  private:
+    void OnInitialize(openaa::core::RuntimeContext &context) override {
         const bool inserted = context.Services().Register({
             .service_id = "tests.smoke.service",
             .endpoint = "local://tests-smoke",
@@ -25,11 +25,11 @@ private:
         }
     }
 
-    void OnStart(openaa::core::RuntimeContext&) override {}
-    void OnStop(openaa::core::RuntimeContext&) override {}
+    void OnStart(openaa::core::RuntimeContext &) override {}
+    void OnStop(openaa::core::RuntimeContext &) override {}
 };
 
-}  // namespace
+} // namespace
 
 int main() {
     openaa::core::Logger logger(std::cout);

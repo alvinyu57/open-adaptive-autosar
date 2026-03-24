@@ -8,4 +8,4 @@ namespace openaa::examples::hello_world {
 
 std::unique_ptr<openaa::core::Application> CreateHelloWorldApp();
 
-}  // namespace openaa::examples::hello_world
+} // namespace openaa::examples::hello_world
