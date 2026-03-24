@@ -25,22 +25,48 @@ This repository now contains a minimal runnable MVP aligned with the current fol
 - `modules/core`: basic runtime primitives for logging, lifecycle, and service registration
 - `modules/exec`: a lightweight execution manager that initializes, starts, and stops applications
 - `examples/01_hello_world`: a sample adaptive application that registers and exposes a greeting service
+- `tests/unit`: GoogleTest-based unit tests for lifecycle and service registration behavior
+- `tests/smoke`: smoke coverage for bringing up the execution manager and a test application
+- `tests/lint`: `clang-format` and `clang-tidy` helper scripts used locally and in CI
 
 The MVP intentionally keeps everything in-process so the architecture stays easy to understand before introducing IPC, SOME/IP, manifests, or process supervision.
 
 ## Build
 
-### Option 1: Local CMake
+### Option 1: Helper Script
 
 ```bash
-cmake -S . -B build
-cmake --build build
+./build.sh
 ```
+
+Enable examples and tests:
+
+```bash
+./build.sh --build-examples --build-tests
+```
+
+Build a different configuration:
+
+```bash
+./build.sh --build-type Debug --shared
+```
+
+Supported options:
+
+- `--build-examples`: enable example targets
+- `--build-tests`: enable unit and smoke test targets
+- `--shared`: build shared libraries
+- `--build-type <type>`: switch Conan/CMake build type, for example `Debug` or `Release`
+- `--conan-option <value>`: pass an extra Conan option and repeat as needed
+
+Build artifacts are generated under `build/<BuildType>`, for example `build/Release`.
 
 ### Option 2: Conan Only
 
 ```bash
+conan profile detect --force
 conan install . --output-folder=build --build=missing \
+  -s build_type=Release \
   -o '&:shared=False' \
   -o '&:build_examples=False' \
   -o '&:build_tests=False'
@@ -67,24 +93,10 @@ docker run --rm \
   -v "$(pwd):/workspace" \
   -w /workspace \
   openaa-build \
-  bash -lc "conan profile detect --force && conan install . --output-folder=build --build=missing && conan build . --output-folder=build"
+  bash -lc "conan profile detect --force && conan install . --output-folder=build --build=missing -s build_type=Release -o '&:build_tests=True' && conan build . --output-folder=build -o '&:build_tests=True'"
 ```
 
 This keeps the host machine clean and makes Docker the single source of truth for the build environment.
-
-If you prefer, you can also use the helper script:
-
-```bash
-./build.sh
-```
-
-Supported build toggles:
-
-- `BUILD_SHARED=True ./build.sh` builds shared libraries
-- `BUILD_EXAMPLES=True ./build.sh` enables example targets
-- `BUILD_TESTS=True ./build.sh` enables test targets
-- `CONAN_BUILD_TYPE=Debug ./build.sh` switches build type
-- `CONAN_OPTIONS="-o '&:some_other_option=True'" ./build.sh` passes extra Conan options
 
 The mapping is:
 
@@ -106,9 +118,59 @@ Run the hello world adaptive application through the execution manager:
 ./build/Release/examples/01_hello_world/openaa_example_hello_world_runner
 ```
 
+## Tests And Lint
+
+Build all test targets first:
+
+```bash
+./build.sh --build-tests
+```
+
+Run the unit test binary:
+
+```bash
+./tests/unit/run_unit_test.sh
+```
+
+Run the smoke test binary:
+
+```bash
+./tests/smoke/run_core_smoke_test.sh
+```
+
+Run the formatting check:
+
+```bash
+docker run --rm \
+  -v "$(pwd):/workspace" \
+  -w /workspace \
+  openaa-build \
+  bash -lc "./tests/lint/run_clang_format_check.sh"
+```
+
+Run the `clang-tidy` check:
+
+```bash
+docker run --rm \
+  -v "$(pwd):/workspace" \
+  -w /workspace \
+  openaa-build \
+  bash -lc "./tests/lint/run_clang_tidy_check.sh"
+```
+
+## CI
+
+Pull requests trigger three independent GitHub Actions jobs:
+
+- `clang-checks`: runs `clang-format` and `clang-tidy`
+- `unit-tests`: runs `ctest -L unit`
+- `smoke-tests`: runs `ctest -L smoke`
+
+Each job writes its own GitHub Job Summary and uploads its raw report or log as an artifact.
+
 ## Suggested Next Steps
 
 - Add application manifests and load them from JSON or YAML
 - Split application launch into separate processes
 - Introduce transport abstractions before implementing SOME/IP
-- Add unit tests for lifecycle and service registration
+- Expand runtime behavior and middleware coverage beyond the current MVP

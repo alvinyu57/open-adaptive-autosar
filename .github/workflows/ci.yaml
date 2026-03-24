@@ -16,14 +16,12 @@ permissions:
   contents: read
 
 jobs:
-  build-and-test:
+  clang-checks:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      BUILD_DIR: build/Release
       LINT_RESULTS_DIR: lint-results
-      TEST_RESULTS_DIR: test-results
 
     steps:
       - name: Checkout repository
@@ -32,8 +30,8 @@ jobs:
       - name: Verify Docker availability
         run: docker version
 
-      - name: Build project with tests enabled
-        run: ./build.sh --build-tests
+      - name: Build project image
+        run: docker build --build-arg USER_ID="$(id -u)" --build-arg GROUP_ID="$(id -g)" -f Dockerfile -t openaa-build .
 
       - name: Run clang-format check
         id: clang_format
@@ -61,52 +59,16 @@ jobs:
             2>&1 | tee "${LINT_RESULTS_DIR}/clang-tidy.log"
           exit "${PIPESTATUS[0]}"
 
-      - name: Run unit tests with CTest
-        id: ctest_unit
-        continue-on-error: true
-        run: |
-          mkdir -p "${TEST_RESULTS_DIR}"
-          docker run --rm \
-            -v "${GITHUB_WORKSPACE}:/workspace" \
-            -w /workspace \
-            openaa-build \
-            bash -lc "
-              ctest \
-                --test-dir '${BUILD_DIR}' \
-                -L unit \
-                --output-on-failure \
-                --output-junit '/workspace/${TEST_RESULTS_DIR}/unit-report.xml'
-            "
-
-      - name: Run smoke tests with CTest
-        id: ctest_smoke
-        continue-on-error: true
-        run: |
-          mkdir -p "${TEST_RESULTS_DIR}"
-          docker run --rm \
-            -v "${GITHUB_WORKSPACE}:/workspace" \
-            -w /workspace \
-            openaa-build \
-            bash -lc "
-              ctest \
-                --test-dir '${BUILD_DIR}' \
-                -L smoke \
-                --output-on-failure \
-                --output-junit '/workspace/${TEST_RESULTS_DIR}/smoke-report.xml'
-            "
-
       - name: Write job summary
         if: always()
         run: |
           {
-            echo "## Lint Summary"
+            echo "## Clang Summary"
             echo
             echo "| Check | Result |"
             echo "| --- | --- |"
             echo "| clang-format | ${{ steps.clang_format.outcome }} |"
             echo "| clang-tidy | ${{ steps.clang_tidy.outcome }} |"
-            echo "| unit tests | ${{ steps.ctest_unit.outcome }} |"
-            echo "| smoke tests | ${{ steps.ctest_smoke.outcome }} |"
             echo
           } >> "${GITHUB_STEP_SUMMARY}"
 
@@ -138,26 +100,6 @@ jobs:
             } >> "${GITHUB_STEP_SUMMARY}"
           fi
 
-          python3 scripts/ci/write_test_summary.py \
-            "${TEST_RESULTS_DIR}/unit-report.xml" \
-            "Unit Test Summary" \
-            >> "${GITHUB_STEP_SUMMARY}"
-
-          python3 scripts/ci/write_test_summary.py \
-            "${TEST_RESULTS_DIR}/smoke-report.xml" \
-            "Smoke Test Summary" \
-            >> "${GITHUB_STEP_SUMMARY}"
-
-      - name: Upload raw test report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ctest-reports
-          path: |
-            test-results/unit-report.xml
-            test-results/smoke-report.xml
-          if-no-files-found: warn
-
       - name: Upload lint reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -170,5 +112,115 @@ jobs:
           if-no-files-found: warn
 
       - name: Fail workflow when checks fail
-        if: steps.clang_format.outcome == 'failure' || steps.clang_tidy.outcome == 'failure' || steps.ctest_unit.outcome == 'failure' || steps.ctest_smoke.outcome == 'failure'
+        if: steps.clang_format.outcome == 'failure' || steps.clang_tidy.outcome == 'failure'
+        run: exit 1
+
+  unit-tests:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      BUILD_DIR: build/Release
+      TEST_RESULTS_DIR: test-results
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify Docker availability
+        run: docker version
+
+      - name: Build project with tests enabled
+        run: ./build.sh --build-tests
+
+      - name: Run unit tests with CTest
+        id: ctest_unit
+        continue-on-error: true
+        run: |
+          mkdir -p "${TEST_RESULTS_DIR}"
+          docker run --rm \
+            -v "${GITHUB_WORKSPACE}:/workspace" \
+            -w /workspace \
+            openaa-build \
+            bash -lc "
+              ctest \
+                --test-dir '${BUILD_DIR}' \
+                -L unit \
+                --output-on-failure \
+                --output-junit '/workspace/${TEST_RESULTS_DIR}/unit-report.xml'
+            "
+
+      - name: Write job summary
+        if: always()
+        run: |
+          python3 scripts/ci/write_test_summary.py \
+            "${TEST_RESULTS_DIR}/unit-report.xml" \
+            "Unit Test Summary" \
+            >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Upload unit test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-report
+          path: test-results/unit-report.xml
+          if-no-files-found: warn
+
+      - name: Fail workflow when checks fail
+        if: steps.ctest_unit.outcome == 'failure'
+        run: exit 1
+
+  smoke-tests:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      BUILD_DIR: build/Release
+      TEST_RESULTS_DIR: test-results
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify Docker availability
+        run: docker version
+
+      - name: Build project with tests enabled
+        run: ./build.sh --build-tests
+
+      - name: Run smoke tests with CTest
+        id: ctest_smoke
+        continue-on-error: true
+        run: |
+          mkdir -p "${TEST_RESULTS_DIR}"
+          docker run --rm \
+            -v "${GITHUB_WORKSPACE}:/workspace" \
+            -w /workspace \
+            openaa-build \
+            bash -lc "
+              ctest \
+                --test-dir '${BUILD_DIR}' \
+                -L smoke \
+                --output-on-failure \
+                --output-junit '/workspace/${TEST_RESULTS_DIR}/smoke-report.xml'
+            "
+
+      - name: Write job summary
+        if: always()
+        run: |
+          python3 scripts/ci/write_test_summary.py \
+            "${TEST_RESULTS_DIR}/smoke-report.xml" \
+            "Smoke Test Summary" \
+            >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Upload smoke test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-test-report
+          path: test-results/smoke-report.xml
+          if-no-files-found: warn
+
+      - name: Fail workflow when checks fail
+        if: steps.ctest_smoke.outcome == 'failure'
         run: exit 1
