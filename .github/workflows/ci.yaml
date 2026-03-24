@@ -39,10 +39,16 @@ jobs:
         continue-on-error: true
         run: |
           mkdir -p "${TEST_RESULTS_DIR}"
-          ctest \
-            --test-dir "${BUILD_DIR}" \
-            --output-on-failure \
-            --output-junit "${TEST_RESULTS_DIR}/ctest-report.xml"
+          docker run --rm \
+            -v "${GITHUB_WORKSPACE}:/workspace" \
+            -w /workspace \
+            openaa-build \
+            bash -lc "
+              ctest \
+                --test-dir '${BUILD_DIR}' \
+                --output-on-failure \
+                --output-junit '/workspace/${TEST_RESULTS_DIR}/ctest-report.xml'
+            "
 
       - name: Write job summary
         if: always()
