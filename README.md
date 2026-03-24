@@ -97,13 +97,13 @@ The mapping is:
 Run the built-in execution manager demo:
 
 ```bash
-./build/build/Release/modules/exec/openaa_exec
+./build/Release/modules/exec/openaa_exec
 ```
 
 Run the hello world adaptive application through the execution manager:
 
 ```bash
-./build/build/Release/examples/01_hello_world/openaa_example_hello_world_runner
+./build/Release/examples/01_hello_world/openaa_example_hello_world_runner
 ```
 
 ## Suggested Next Steps

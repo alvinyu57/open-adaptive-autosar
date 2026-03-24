@@ -1,3 +1,5 @@
+import os
+
 from conan import ConanFile
 from conan.tools.cmake import CMake, CMakeDeps, CMakeToolchain, cmake_layout
 
@@ -37,6 +39,8 @@ class AdaptiveAutosarConan(ConanFile):
 
     def layout(self):
         cmake_layout(self)
+        self.folders.build = str(self.settings.build_type)
+        self.folders.generators = os.path.join(self.folders.build, "generators")
 
     def generate(self):
         toolchain = CMakeToolchain(self)

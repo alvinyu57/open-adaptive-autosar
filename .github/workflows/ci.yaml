@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      BUILD_DIR: build/build/Release
+      BUILD_DIR: build/Release
       TEST_RESULTS_DIR: test-results
 
     steps:
@@ -33,6 +33,26 @@ jobs:
 
       - name: Build project with tests enabled
         run: ./build.sh --build-tests
+
+      - name: Run clang-format check
+        id: clang_format
+        continue-on-error: true
+        run: |
+          docker run --rm \
+            -v "${GITHUB_WORKSPACE}:/workspace" \
+            -w /workspace \
+            openaa-build \
+            bash -lc "./tests/lint/run_clang_format_check.sh"
+
+      - name: Run clang-tidy check
+        id: clang_tidy
+        continue-on-error: true
+        run: |
+          docker run --rm \
+            -v "${GITHUB_WORKSPACE}:/workspace" \
+            -w /workspace \
+            openaa-build \
+            bash -lc "./tests/lint/run_clang_tidy_check.sh"
 
       - name: Run tests with CTest
         id: ctest
@@ -53,6 +73,17 @@ jobs:
       - name: Write job summary
         if: always()
         run: |
+          {
+            echo "## Lint Summary"
+            echo
+            echo "| Check | Result |"
+            echo "| --- | --- |"
+            echo "| clang-format | ${{ steps.clang_format.outcome }} |"
+            echo "| clang-tidy | ${{ steps.clang_tidy.outcome }} |"
+            echo "| ctest | ${{ steps.ctest.outcome }} |"
+            echo
+          } >> "${GITHUB_STEP_SUMMARY}"
+
           python3 scripts/ci/write_test_summary.py \
             "${TEST_RESULTS_DIR}/ctest-report.xml" \
             >> "${GITHUB_STEP_SUMMARY}"
@@ -65,6 +96,6 @@ jobs:
           path: test-results/ctest-report.xml
           if-no-files-found: warn
 
-      - name: Fail workflow when tests fail
-        if: steps.ctest.outcome == 'failure'
+      - name: Fail workflow when checks fail
+        if: steps.clang_format.outcome == 'failure' || steps.clang_tidy.outcome == 'failure' || steps.ctest.outcome == 'failure'
         run: exit 1

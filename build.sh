@@ -92,7 +92,7 @@ docker run --rm \
         echo '  build_examples=${BUILD_EXAMPLES}' &&
         echo '  build_tests=${BUILD_TESTS}' &&
 
-        rm -rf build/build/${CONAN_BUILD_TYPE} &&
+        rm -rf build/${CONAN_BUILD_TYPE} &&
 
         conan profile detect --force && 
 
@@ -104,7 +104,7 @@ docker run --rm \
             ${CONAN_OPTIONS} &&
 
         echo 'Generated preset values:' &&
-        sed -n '/cacheVariables/,/}/p' build/build/${CONAN_BUILD_TYPE}/generators/CMakePresets.json &&
+        sed -n '/cacheVariables/,/}/p' build/${CONAN_BUILD_TYPE}/generators/CMakePresets.json &&
 
         conan build . --output-folder=build \
             -o 'shared=${BUILD_SHARED}' \

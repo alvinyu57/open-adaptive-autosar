@@ -4,7 +4,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
-BUILD_ROOT="${PROJECT_ROOT}/build/build/Release"
+BUILD_ROOT="${PROJECT_ROOT}/build/Release"
 TEST_BINARY="${BUILD_ROOT}/tests/openaa_core_smoke_test"
 
 if [ ! -x "${TEST_BINARY}" ]; then
