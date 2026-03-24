@@ -4,75 +4,34 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
-BUILD_DIR="${PROJECT_ROOT}/build/Release"
+BUILD_ROOT="${PROJECT_ROOT}/build-clang-tidy"
+BUILD_TYPE="Release"
+BUILD_DIR="${BUILD_ROOT}/${BUILD_TYPE}"
+RESULTS_DIR="${BUILD_ROOT}/results"
+RESULT_FILE="${RESULTS_DIR}/clang-tidy-result.txt"
 COMPILE_COMMANDS="${BUILD_DIR}/compile_commands.json"
-BUILD_TYPE="$(basename "${BUILD_DIR}")"
 
-restore_conan_dependencies() {
-    echo "Restoring Conan dependencies for clang-tidy..."
-    cd "${PROJECT_ROOT}"
-    conan profile detect --force
-    conan install . --output-folder=build --build=missing \
-        -s "build_type=${BUILD_TYPE}" \
-        -o 'shared=False' \
-        -o 'build_examples=False' \
-        -o 'build_tests=True'
-}
+rm -rf "${BUILD_ROOT}" &> /dev/null
 
-compile_commands_reference_missing_paths() {
-    python3 - "${COMPILE_COMMANDS}" <<'PY'
-import json
-import os
-import shlex
-import sys
-from pathlib import Path
+cd "${PROJECT_ROOT}"
 
-compile_commands_path = Path(sys.argv[1]).resolve()
+conan profile detect --force
+conan install . --output-folder="${BUILD_ROOT}" --build=missing \
+    -s "build_type=${BUILD_TYPE}" \
+    -o 'shared=False' \
+    -o 'build_examples=False' \
+    -o 'build_tests=True'
+conan build . --output-folder="${BUILD_ROOT}" \
+    -o 'shared=False' \
+    -o 'build_examples=False' \
+    -o 'build_tests=True'
 
-with compile_commands_path.open("r", encoding="utf-8") as fh:
-    entries = json.load(fh)
-
-for entry in entries:
-    command = entry.get("command")
-    arguments = entry.get("arguments")
-    tokens = shlex.split(command) if command else list(arguments or [])
-
-    i = 0
-    while i < len(tokens):
-        token = tokens[i]
-        include_path = None
-
-        if token in {"-I", "-isystem"} and i + 1 < len(tokens):
-            include_path = tokens[i + 1]
-            i += 1
-        elif token.startswith("-I") and len(token) > 2:
-            include_path = token[2:]
-        elif token.startswith("-isystem") and len(token) > len("-isystem"):
-            include_path = token[len("-isystem"):]
-
-        if include_path and os.path.isabs(include_path) and not Path(include_path).exists():
-            print(include_path)
-            raise SystemExit(0)
-
-        i += 1
-
-raise SystemExit(1)
-PY
-}
+mkdir -p "${RESULTS_DIR}"
+touch "${RESULT_FILE}"
 
 if [ ! -f "${COMPILE_COMMANDS}" ]; then
-    echo "compile_commands.json not found, building test configuration..." >&2
-    "${PROJECT_ROOT}/build.sh" --build-tests
-fi
-
-if [ ! -f "${COMPILE_COMMANDS}" ]; then
-    echo "compile_commands.json still not found: ${COMPILE_COMMANDS}" >&2
+    echo "compile_commands.json not found: ${COMPILE_COMMANDS}" >&2
     exit 1
-fi
-
-if missing_path="$(compile_commands_reference_missing_paths)"; then
-    echo "Missing dependency path referenced by compile_commands.json: ${missing_path}" >&2
-    restore_conan_dependencies
 fi
 
 mapfile -t SOURCE_FILES < <(
@@ -119,11 +78,17 @@ fi
 
 echo "Running clang-tidy check on ${#SOURCE_FILES[@]} file(s)..."
 
-cd "${PROJECT_ROOT}"
-clang-tidy \
-    -p "${BUILD_DIR}" \
+if clang-tidy \
+    -p="${BUILD_DIR}" \
     --quiet \
     --warnings-as-errors='*' \
-    "${SOURCE_FILES[@]}"
+    "${SOURCE_FILES[@]}" > "${RESULT_FILE}" 2>&1; then
+    echo ""
+    echo "No violations found!"
+    exit 0
+fi
 
-echo "clang-tidy check passed."
+echo ""
+echo "clang-tidy violations found!"
+echo "Check details in ${RESULT_FILE}"
+exit 1
