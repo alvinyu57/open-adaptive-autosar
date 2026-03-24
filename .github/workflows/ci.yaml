@@ -54,8 +54,8 @@ jobs:
             openaa-build \
             bash -lc "./tests/lint/run_clang_tidy_check.sh"
 
-      - name: Run tests with CTest
-        id: ctest
+      - name: Run unit tests with CTest
+        id: ctest_unit
         continue-on-error: true
         run: |
           mkdir -p "${TEST_RESULTS_DIR}"
@@ -66,8 +66,26 @@ jobs:
             bash -lc "
               ctest \
                 --test-dir '${BUILD_DIR}' \
+                -L unit \
                 --output-on-failure \
-                --output-junit '/workspace/${TEST_RESULTS_DIR}/ctest-report.xml'
+                --output-junit '/workspace/${TEST_RESULTS_DIR}/unit-report.xml'
+            "
+
+      - name: Run smoke tests with CTest
+        id: ctest_smoke
+        continue-on-error: true
+        run: |
+          mkdir -p "${TEST_RESULTS_DIR}"
+          docker run --rm \
+            -v "${GITHUB_WORKSPACE}:/workspace" \
+            -w /workspace \
+            openaa-build \
+            bash -lc "
+              ctest \
+                --test-dir '${BUILD_DIR}' \
+                -L smoke \
+                --output-on-failure \
+                --output-junit '/workspace/${TEST_RESULTS_DIR}/smoke-report.xml'
             "
 
       - name: Write job summary
@@ -80,22 +98,31 @@ jobs:
             echo "| --- | --- |"
             echo "| clang-format | ${{ steps.clang_format.outcome }} |"
             echo "| clang-tidy | ${{ steps.clang_tidy.outcome }} |"
-            echo "| ctest | ${{ steps.ctest.outcome }} |"
+            echo "| unit tests | ${{ steps.ctest_unit.outcome }} |"
+            echo "| smoke tests | ${{ steps.ctest_smoke.outcome }} |"
             echo
           } >> "${GITHUB_STEP_SUMMARY}"
 
           python3 scripts/ci/write_test_summary.py \
-            "${TEST_RESULTS_DIR}/ctest-report.xml" \
+            "${TEST_RESULTS_DIR}/unit-report.xml" \
+            "Unit Test Summary" \
+            >> "${GITHUB_STEP_SUMMARY}"
+
+          python3 scripts/ci/write_test_summary.py \
+            "${TEST_RESULTS_DIR}/smoke-report.xml" \
+            "Smoke Test Summary" \
             >> "${GITHUB_STEP_SUMMARY}"
 
       - name: Upload raw test report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ctest-report
-          path: test-results/ctest-report.xml
+          name: ctest-reports
+          path: |
+            test-results/unit-report.xml
+            test-results/smoke-report.xml
           if-no-files-found: warn
 
       - name: Fail workflow when checks fail
-        if: steps.clang_format.outcome == 'failure' || steps.clang_tidy.outcome == 'failure' || steps.ctest.outcome == 'failure'
+        if: steps.clang_format.outcome == 'failure' || steps.clang_tidy.outcome == 'failure' || steps.ctest_unit.outcome == 'failure' || steps.ctest_smoke.outcome == 'failure'
         run: exit 1

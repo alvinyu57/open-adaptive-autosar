@@ -14,4 +14,8 @@ target_link_libraries(openaa_core_unit_test
 
 target_compile_features(openaa_core_unit_test PRIVATE cxx_std_20)
 
-gtest_discover_tests(openaa_core_unit_test)
+gtest_discover_tests(
+    openaa_core_unit_test
+    PROPERTIES
+        LABELS "unit"
+)

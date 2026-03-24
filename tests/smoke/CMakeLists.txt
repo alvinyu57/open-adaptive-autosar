@@ -18,3 +18,9 @@ add_test(
     NAME openaa_core_smoke_test
     COMMAND openaa_core_smoke_test
 )
+
+set_tests_properties(
+    openaa_core_smoke_test
+    PROPERTIES
+        LABELS "smoke"
+)

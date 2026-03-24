@@ -18,12 +18,14 @@ def _escape_cell(value: str) -> str:
 
 
 def main() -> int:
-    if len(sys.argv) != 2:
-        print("Usage: write_test_summary.py <junit-xml>", file=sys.stderr)
+    if len(sys.argv) not in {2, 3}:
+        print("Usage: write_test_summary.py <junit-xml> [title]", file=sys.stderr)
         return 2
 
     report_path = Path(sys.argv[1])
-    print("## Test Summary")
+    title = sys.argv[2] if len(sys.argv) == 3 else "Test Summary"
+
+    print(f"## {title}")
     print()
 
     if not report_path.is_file():
