@@ -1,0 +1,64 @@
+name: PR CI
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+
+concurrency:
+  group: pr-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      BUILD_DIR: build/build/Release
+      TEST_RESULTS_DIR: test-results
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify Docker availability
+        run: docker version
+
+      - name: Build project with tests enabled
+        run: ./build.sh --build-tests
+
+      - name: Run tests with CTest
+        id: ctest
+        continue-on-error: true
+        run: |
+          mkdir -p "${TEST_RESULTS_DIR}"
+          ctest \
+            --test-dir "${BUILD_DIR}" \
+            --output-on-failure \
+            --output-junit "${TEST_RESULTS_DIR}/ctest-report.xml"
+
+      - name: Write job summary
+        if: always()
+        run: |
+          python3 scripts/ci/write_test_summary.py \
+            "${TEST_RESULTS_DIR}/ctest-report.xml" \
+            >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Upload raw test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ctest-report
+          path: test-results/ctest-report.xml
+          if-no-files-found: warn
+
+      - name: Fail workflow when tests fail
+        if: steps.ctest.outcome == 'failure'
+        run: exit 1

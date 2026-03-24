@@ -1,0 +1,6 @@
+.git
+build
+.cache
+.idea
+.vscode
+cmake-build-*
