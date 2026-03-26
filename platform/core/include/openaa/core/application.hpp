@@ -9,7 +9,7 @@
 
 #include "ara/core/application.hpp"
 
-namespace openaa::platform::core {
+namespace openaa::core {
 
 class Logger final : public ara::core::Logger {
   public:
@@ -55,4 +55,4 @@ class Application : public ara::core::Application {
     ara::core::ApplicationState state_{ara::core::ApplicationState::kCreated};
 };
 
-} // namespace openaa::platform::core
+} // namespace openaa::core

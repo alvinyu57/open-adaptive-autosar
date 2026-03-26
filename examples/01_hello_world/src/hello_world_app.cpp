@@ -2,15 +2,15 @@
 
 #include <sstream>
 
-#include "openaa/platform/core/application.hpp"
+#include "openaa/core/application.hpp"
 
 namespace openaa::examples::hello_world {
 
 namespace {
 
-class HelloWorldApp final : public openaa::platform::core::Application {
+class HelloWorldApp final : public openaa::core::Application {
   public:
-    HelloWorldApp() : openaa::platform::core::Application("examples.hello_world") {}
+    HelloWorldApp() : openaa::core::Application("examples.hello_world") {}
 
   private:
     void OnInitialize(ara::core::RuntimeContext &context) override {

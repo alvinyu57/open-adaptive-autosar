@@ -47,7 +47,8 @@ with compile_commands_path.open("r", encoding="utf-8") as fh:
     entries = json.load(fh)
 
 allowed_roots = (
-    project_root / "modules",
+    project_root / "ara",
+    project_root / "platform",
     project_root / "tests",
 )
 

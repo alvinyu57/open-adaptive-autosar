@@ -4,9 +4,9 @@
 #include <vector>
 
 #include "ara/exec/execution_manager.hpp"
-#include "openaa/platform/core/application.hpp"
+#include "openaa/core/application.hpp"
 
-namespace openaa::platform::exec {
+namespace openaa::exec {
 
 class ExecutionManager final : public ara::exec::ExecutionManager {
   public:
@@ -20,8 +20,8 @@ class ExecutionManager final : public ara::exec::ExecutionManager {
 
   private:
     ara::core::Logger *logger_;
-    openaa::platform::core::ServiceRegistry registry_;
+    openaa::core::ServiceRegistry registry_;
     std::vector<std::unique_ptr<ara::core::Application>> applications_;
 };
 
-} // namespace openaa::platform::exec
+} // namespace openaa::exec

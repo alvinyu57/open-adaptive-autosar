@@ -6,19 +6,16 @@ Standardized ARA-facing core interfaces used by the OpenAA platform layer.
 
 The `ara/core` package defines the smallest reusable interfaces needed by adaptive applications and higher-level runtime managers:
 
-- application lifecycle state handling
-- runtime logging
-- in-process service registration
+- application lifecycle contracts
+- runtime logging contracts
+- service registration contracts
 - a shared runtime context passed into applications
 
-This layer intentionally stays transport-agnostic and implementation-agnostic. Concrete lifecycle handling, logging, and service registry behavior belong in the platform layer.
+This layer intentionally stays transport-agnostic and implementation-agnostic. Concrete lifecycle handling, logging, and service-registry behavior belong in the platform layer.
 
 ## Main Building Blocks
 
-- `Logger`: interface for runtime logging.
-- `ServiceRegistry`: interface for service registration and discovery snapshots.
-- `RuntimeContext`: lightweight bundle of shared runtime service references.
-- `Application`: application lifecycle contract exposed to platform orchestration.
+- `ara/core/application.hpp`: `Logger`, `ServiceRegistry`, `RuntimeContext`, `Application`, and supporting types
 
 ## Software Architecture Requirements
 
@@ -30,39 +27,37 @@ This layer intentionally stays transport-agnostic and implementation-agnostic. C
 
 ### Application lifecycle
 
-- `Application` shall model lifecycle progression with explicit states: `kCreated`, `kInitialized`, `kRunning`, and `kStopped`.
-- `Application::Initialize()` shall only be accepted from `kCreated`; any other source state shall be rejected with a logic error.
-- `Application::Run()` shall only be accepted from `kInitialized`; any other source state shall be rejected with a logic error.
-- `Application::Stop()` shall be idempotent for applications that are already stopped or were never initialized.
-- `Application` shall expose lifecycle extension points through `OnInitialize()`, `OnStart()`, and `OnStop()` so module users can provide application-specific behavior without reimplementing state handling.
+- `Application` shall expose explicit lifecycle operations for initialization, execution, and shutdown.
+- `Application` shall expose observable lifecycle state through `State()`.
+- `Application` shall expose a stable application identifier through `Name()`.
+- `ara/core` shall not require a single implementation strategy for lifecycle enforcement; those rules belong to the platform layer.
 
 ### Shared runtime context
 
 - `RuntimeContext` shall provide applications access to shared runtime capabilities through stable references rather than ownership transfer.
 - `RuntimeContext` shall expose at least logging and service-registration facilities to application code.
-- `RuntimeContext` shall remain lightweight so it can be created by the execution layer for each runtime session without additional orchestration state.
+- `RuntimeContext` shall remain lightweight so it can be created by an execution layer without additional orchestration state.
 
 ### Service registration
 
-- `ServiceRegistry` shall store service entries identified by a unique `service_id`.
-- `ServiceRegistry::Register()` shall reject duplicate `service_id` values by returning `false` and preserving the existing entry.
-- `ServiceRegistry::List()` shall return a snapshot of the currently registered services suitable for status reporting and tests.
-- `ServiceRegistry` shall protect internal state against concurrent access when registering or listing services.
+- `ServiceRegistry` shall define registration of service entries identified by a `service_id`.
+- `ServiceRegistry::Register()` shall report whether registration succeeded.
+- `ServiceRegistry::List()` shall return a snapshot suitable for status reporting, diagnostics, or tests.
+- `ara/core` shall not prescribe the concrete storage, synchronization, or duplicate-handling strategy beyond the observable contract.
 
 ### Logging
 
 - `Logger` shall provide at least `Info`, `Warn`, and `Error` severity levels.
-- Log messages emitted by `Logger` shall include a timestamp, severity, and component identifier so runtime activity can be correlated across modules.
-- `Logger` shall write to an injected output stream so tests or embedding environments can redirect log output without changing the core API.
+- `Logger` shall accept a component identifier and message payload for each log record.
+- `ara/core` shall not require a specific timestamp format, sink, or buffering strategy.
 
 ### Quality attributes
 
-- `core` should remain small, deterministic, and easy to unit-test without external infrastructure.
-- Public interfaces in `core` should favor standard C++ types and ownership semantics that make misuse visible at compile time or fail fast at runtime.
-- Architecture changes in `core` should preserve backward compatibility for existing `exec` integration unless the public API is intentionally revised.
+- `ara/core` should remain small, deterministic, and easy to consume without external infrastructure.
+- Public interfaces in `ara/core` should favor standard C++ types and clear ownership semantics.
+- Architecture changes in `ara/core` should preserve compatibility for dependent platform and application code unless the public API is intentionally revised.
 
 ## Current Limitations
 
-- Service registration is currently in-process only.
-- Lifecycle execution is synchronous.
-- The module does not yet model manifests, health management, or state management beyond the local application state machine.
+- The current repository provides one in-process implementation in `platform/core`.
+- The interface set is intentionally minimal and does not yet cover manifests, health management, or richer state-management services.

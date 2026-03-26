@@ -3,14 +3,14 @@
 #include <stdexcept>
 
 #include "ara/core/application.hpp"
-#include "openaa/platform/core/application.hpp"
-#include "openaa/platform/exec/execution_manager.hpp"
+#include "openaa/core/application.hpp"
+#include "openaa/exec/execution_manager.hpp"
 
 namespace {
 
-class TestApp final : public openaa::platform::core::Application {
+class TestApp final : public openaa::core::Application {
   public:
-    TestApp() : openaa::platform::core::Application("tests.smoke") {}
+    TestApp() : openaa::core::Application("tests.smoke") {}
 
   private:
     void OnInitialize(ara::core::RuntimeContext &context) override {
@@ -32,8 +32,8 @@ class TestApp final : public openaa::platform::core::Application {
 } // namespace
 
 int main() {
-    openaa::platform::core::Logger logger(std::cout);
-    openaa::platform::exec::ExecutionManager manager(logger);
+    openaa::core::Logger logger(std::cout);
+    openaa::exec::ExecutionManager manager(logger);
 
     manager.AddApplication(std::make_unique<TestApp>());
     manager.Start();

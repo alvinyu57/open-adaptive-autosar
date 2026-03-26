@@ -5,13 +5,13 @@
 #include <gtest/gtest.h>
 
 #include "ara/core/application.hpp"
-#include "openaa/platform/core/application.hpp"
+#include "openaa/core/application.hpp"
 
 namespace {
 
-class RecordingApplication final : public openaa::platform::core::Application {
+class RecordingApplication final : public openaa::core::Application {
   public:
-    RecordingApplication() : openaa::platform::core::Application("tests.unit.recording") {}
+    RecordingApplication() : openaa::core::Application("tests.unit.recording") {}
 
     bool initialized{false};
     bool started{false};
@@ -44,7 +44,7 @@ class RecordingApplication final : public openaa::platform::core::Application {
 };
 
 TEST(ServiceRegistryTest, RejectsDuplicateServiceId) {
-    openaa::platform::core::ServiceRegistry registry;
+    openaa::core::ServiceRegistry registry;
 
     EXPECT_TRUE(registry.Register({
         .service_id = "svc.alpha",
@@ -65,8 +65,8 @@ TEST(ServiceRegistryTest, RejectsDuplicateServiceId) {
 
 TEST(ApplicationTest, TransitionsThroughLifecycleAndInvokesHooks) {
     std::ostringstream logs;
-    openaa::platform::core::Logger logger(logs);
-    openaa::platform::core::ServiceRegistry registry;
+    openaa::core::Logger logger(logs);
+    openaa::core::ServiceRegistry registry;
     ara::core::RuntimeContext context(registry, logger);
     RecordingApplication application;
 
@@ -88,8 +88,8 @@ TEST(ApplicationTest, TransitionsThroughLifecycleAndInvokesHooks) {
 
 TEST(ApplicationTest, RejectsRunningBeforeInitialization) {
     std::ostringstream logs;
-    openaa::platform::core::Logger logger(logs);
-    openaa::platform::core::ServiceRegistry registry;
+    openaa::core::Logger logger(logs);
+    openaa::core::ServiceRegistry registry;
     ara::core::RuntimeContext context(registry, logger);
     RecordingApplication application;
 
@@ -98,8 +98,8 @@ TEST(ApplicationTest, RejectsRunningBeforeInitialization) {
 
 TEST(ApplicationTest, StopBeforeInitializationIsANoop) {
     std::ostringstream logs;
-    openaa::platform::core::Logger logger(logs);
-    openaa::platform::core::ServiceRegistry registry;
+    openaa::core::Logger logger(logs);
+    openaa::core::ServiceRegistry registry;
     ara::core::RuntimeContext context(registry, logger);
     RecordingApplication application;
 

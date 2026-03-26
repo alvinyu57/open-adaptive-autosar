@@ -1,8 +1,8 @@
-#include "openaa/platform/exec/execution_manager.hpp"
+#include "openaa/exec/execution_manager.hpp"
 
 #include <sstream>
 
-namespace openaa::platform::exec {
+namespace openaa::exec {
 
 ExecutionManager::ExecutionManager(ara::core::Logger &logger) : logger_(&logger) {}
 
@@ -44,4 +44,4 @@ const ara::core::ServiceRegistry &ExecutionManager::Services() const {
     return registry_;
 }
 
-} // namespace openaa::platform::exec
+} // namespace openaa::exec

@@ -1,4 +1,4 @@
-#include "openaa/platform/core/application.hpp"
+#include "openaa/core/application.hpp"
 
 #include <chrono>
 #include <ctime>
@@ -6,7 +6,7 @@
 #include <sstream>
 #include <stdexcept>
 
-namespace openaa::platform::core {
+namespace openaa::core {
 
 namespace {
 
@@ -105,4 +105,4 @@ ara::core::ApplicationState Application::State() const {
     return state_;
 }
 
-} // namespace openaa::platform::core
+} // namespace openaa::core

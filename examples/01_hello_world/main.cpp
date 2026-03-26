@@ -2,12 +2,12 @@
 #include <sstream>
 
 #include "openaa/examples/hello_world/hello_world_app.hpp"
-#include "openaa/platform/core/application.hpp"
-#include "openaa/platform/exec/execution_manager.hpp"
+#include "openaa/core/application.hpp"
+#include "openaa/exec/execution_manager.hpp"
 
 int main() {
-    openaa::platform::core::Logger logger(std::cout);
-    openaa::platform::exec::ExecutionManager manager(logger);
+    openaa::core::Logger logger(std::cout);
+    openaa::exec::ExecutionManager manager(logger);
 
     manager.AddApplication(openaa::examples::hello_world::CreateHelloWorldApp());
     manager.Start();

@@ -1,14 +1,14 @@
 #include <iostream>
 
 #include "ara/core/application.hpp"
-#include "openaa/platform/core/application.hpp"
-#include "openaa/platform/exec/execution_manager.hpp"
+#include "openaa/core/application.hpp"
+#include "openaa/exec/execution_manager.hpp"
 
 namespace {
 
-class DiagnosticsApp final : public openaa::platform::core::Application {
+class DiagnosticsApp final : public openaa::core::Application {
   public:
-    DiagnosticsApp() : openaa::platform::core::Application("diagnostics.stub") {}
+    DiagnosticsApp() : openaa::core::Application("diagnostics.stub") {}
 
   private:
     void OnInitialize(ara::core::RuntimeContext &context) override {
@@ -32,8 +32,8 @@ class DiagnosticsApp final : public openaa::platform::core::Application {
 } // namespace
 
 int main() {
-    openaa::platform::core::Logger logger(std::cout);
-    openaa::platform::exec::ExecutionManager manager(logger);
+    openaa::core::Logger logger(std::cout);
+    openaa::exec::ExecutionManager manager(logger);
 
     manager.AddApplication(std::make_unique<DiagnosticsApp>());
     manager.Start();

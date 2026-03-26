@@ -31,6 +31,12 @@ This repository now contains a minimal runnable MVP aligned with the current fol
 
 The MVP intentionally keeps everything in-process so the architecture stays easy to understand before introducing IPC, SOME/IP, manifests, or process supervision.
 
+The layering is:
+
+- `ara/...`: interface contracts
+- `platform/...`: default OpenAA implementation of those contracts
+- `examples/...`: code that consumes the contracts and platform runtime
+
 ## Build
 
 ### Option 1: Helper Script

@@ -6,19 +6,11 @@ Standardized execution-management interfaces exposed above the platform layer.
 
 The `ara/exec` package defines orchestration-facing interfaces that operate on the abstractions provided by `ara/core`.
 
-In the current MVP it is responsible for:
-
-- registering application instances with the runtime
-- creating a shared runtime context
-- driving application initialization and start-up in order
-- driving shutdown in reverse order
-- exposing a runtime service snapshot for observability and tests
-
 This layer does not implement startup policy itself. Concrete execution-manager behavior belongs in `platform/exec`.
 
 ## Main Building Blocks
 
-- `ExecutionManager`: interface for lifecycle orchestration of adaptive applications.
+- `ara/exec/execution_manager.hpp`: `ExecutionManager` interface for lifecycle orchestration of adaptive applications
 
 ## Software Architecture Requirements
 
@@ -36,31 +28,26 @@ This layer does not implement startup policy itself. Concrete execution-manager 
 
 ### Startup behavior
 
-- `ExecutionManager::Start()` shall create a runtime context that shares one service registry and one logger across all managed applications in the same runtime session.
-- `ExecutionManager::Start()` shall initialize each registered application before starting it.
-- `ExecutionManager::Start()` shall process applications in registration order so startup behavior remains deterministic.
-- After startup, the execution layer shall publish a summary of the runtime service inventory for diagnostics and smoke testing.
+- `ExecutionManager::Start()` shall expose an explicit platform entry point for beginning managed application execution.
+- `ara/exec` shall not prescribe startup ordering, logging detail, or context construction beyond what is visible through the interface contract.
 
 ### Shutdown behavior
 
-- `ExecutionManager::Stop()` shall invoke application shutdown in reverse registration order to reduce teardown dependency risk.
-- `ExecutionManager::Stop()` shall reuse the same shared runtime facilities model during shutdown so applications can log and release services consistently.
-- The execution layer shall log shutdown progress for each application and emit a final runtime-stopped message.
+- `ExecutionManager::Stop()` shall expose an explicit platform entry point for stopping managed application execution.
+- `ara/exec` shall not prescribe shutdown ordering, rollback behavior, or supervision policy beyond what is visible through the interface contract.
 
 ### Shared runtime data
 
-- `ExecutionManager` shall own the runtime `ServiceRegistry` instance for the lifetime of the managed runtime session.
-- `ExecutionManager::Services()` shall expose read-only access to the registry so tests and diagnostics can inspect registered services without mutating manager state.
-- All managed applications in a single execution manager instance shall observe the same service registry contents through the shared runtime context.
+- `ExecutionManager::Services()` shall expose read-only access to a service registry view suitable for diagnostics and tests.
+- `ara/exec` shall not require a particular ownership model for the underlying registry implementation.
 
 ### Quality attributes and evolution
 
-- The MVP execution path should remain synchronous and easy to understand until manifest-driven launching or multi-process supervision is introduced.
-- The module should be testable with lightweight unit and smoke coverage using stub applications.
-- Future evolution of `exec` may add manifests, health supervision, restart handling, and process isolation, but those concerns should extend rather than invalidate the current core lifecycle contract.
+- `ara/exec` should remain a thin orchestration contract layered on top of `ara/core`.
+- The module should be testable with lightweight unit and smoke coverage using stub applications and platform implementations.
+- Future evolution of `ara/exec` may add richer execution-management contracts, but those additions should preserve a clear separation from platform-specific policy.
 
 ## Current Limitations
 
-- Applications are instantiated directly in code rather than loaded from manifests.
-- Startup failure handling and rollback policy are not yet modeled.
-- Runtime supervision, restart, and separate process execution are not yet implemented.
+- The current repository provides one concrete in-process implementation in `platform/exec`.
+- Manifest-driven startup, restart policy, health supervision, and process isolation are not yet represented in the interface layer.

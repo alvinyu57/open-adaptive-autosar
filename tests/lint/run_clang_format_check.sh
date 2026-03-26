@@ -8,7 +8,7 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 if command -v rg >/dev/null 2>&1; then
     mapfile -t SOURCE_FILES < <(
         cd "${PROJECT_ROOT}" && \
-        rg --files modules tests examples \
+        rg --files ara platform tests examples \
             -g '*.c' \
             -g '*.cc' \
             -g '*.cpp' \
@@ -18,7 +18,8 @@ if command -v rg >/dev/null 2>&1; then
 else
     mapfile -t SOURCE_FILES < <(
         find \
-            "${PROJECT_ROOT}/modules" \
+            "${PROJECT_ROOT}/ara" \
+            "${PROJECT_ROOT}/platform" \
             "${PROJECT_ROOT}/tests" \
             "${PROJECT_ROOT}/examples" \
             -type f \
