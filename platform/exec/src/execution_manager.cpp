@@ -1,18 +1,18 @@
-#include "openaa/exec/execution_manager.hpp"
+#include "openaa/platform/exec/execution_manager.hpp"
 
 #include <sstream>
 
-namespace openaa::exec {
+namespace openaa::platform::exec {
 
-ExecutionManager::ExecutionManager(openaa::core::Logger &logger) : logger_(&logger) {}
+ExecutionManager::ExecutionManager(ara::core::Logger &logger) : logger_(&logger) {}
 
-void ExecutionManager::AddApplication(std::unique_ptr<openaa::core::Application> application) {
+void ExecutionManager::AddApplication(std::unique_ptr<ara::core::Application> application) {
     logger_->Info("exec", "Register application: " + application->Name());
     applications_.push_back(std::move(application));
 }
 
 void ExecutionManager::Start() {
-    openaa::core::RuntimeContext context(registry_, *logger_);
+    ara::core::RuntimeContext context(registry_, *logger_);
     logger_->Info("exec", "Execution manager start");
 
     for (auto &application : applications_) {
@@ -30,7 +30,7 @@ void ExecutionManager::Start() {
 }
 
 void ExecutionManager::Stop() {
-    openaa::core::RuntimeContext context(registry_, *logger_);
+    ara::core::RuntimeContext context(registry_, *logger_);
 
     for (auto it = applications_.rbegin(); it != applications_.rend(); ++it) {
         logger_->Info("exec", "Stop " + (*it)->Name());
@@ -40,8 +40,8 @@ void ExecutionManager::Stop() {
     logger_->Info("exec", "Execution manager stopped");
 }
 
-const openaa::core::ServiceRegistry &ExecutionManager::Services() const {
+const ara::core::ServiceRegistry &ExecutionManager::Services() const {
     return registry_;
 }
 
-} // namespace openaa::exec
+} // namespace openaa::platform::exec

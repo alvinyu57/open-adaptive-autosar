@@ -1,19 +1,19 @@
 #include <iostream>
 #include <memory>
-#include <sstream>
 #include <stdexcept>
 
-#include "openaa/core/application.hpp"
-#include "openaa/exec/execution_manager.hpp"
+#include "ara/core/application.hpp"
+#include "openaa/platform/core/application.hpp"
+#include "openaa/platform/exec/execution_manager.hpp"
 
 namespace {
 
-class TestApp final : public openaa::core::Application {
+class TestApp final : public openaa::platform::core::Application {
   public:
-    TestApp() : openaa::core::Application("tests.smoke") {}
+    TestApp() : openaa::platform::core::Application("tests.smoke") {}
 
   private:
-    void OnInitialize(openaa::core::RuntimeContext &context) override {
+    void OnInitialize(ara::core::RuntimeContext &context) override {
         const bool inserted = context.Services().Register({
             .service_id = "tests.smoke.service",
             .endpoint = "local://tests-smoke",
@@ -25,15 +25,15 @@ class TestApp final : public openaa::core::Application {
         }
     }
 
-    void OnStart(openaa::core::RuntimeContext &) override {}
-    void OnStop(openaa::core::RuntimeContext &) override {}
+    void OnStart(ara::core::RuntimeContext &) override {}
+    void OnStop(ara::core::RuntimeContext &) override {}
 };
 
 } // namespace
 
 int main() {
-    openaa::core::Logger logger(std::cout);
-    openaa::exec::ExecutionManager manager(logger);
+    openaa::platform::core::Logger logger(std::cout);
+    openaa::platform::exec::ExecutionManager manager(logger);
 
     manager.AddApplication(std::make_unique<TestApp>());
     manager.Start();

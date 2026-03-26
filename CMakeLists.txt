@@ -10,8 +10,8 @@ option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 option(OPEN_AA_BUILD_EXAMPLES "Build example applications" ON)
 option(OPEN_AA_BUILD_TESTS "Build test targets" OFF)
 
-add_subdirectory(modules/core)
-add_subdirectory(modules/exec)
+add_subdirectory(ara)
+add_subdirectory(platform)
 
 if(OPEN_AA_BUILD_EXAMPLES)
     add_subdirectory(examples/01_hello_world)

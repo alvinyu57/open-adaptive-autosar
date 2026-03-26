@@ -8,8 +8,8 @@ set_target_properties(openaa_core_smoke_test PROPERTIES
 
 target_link_libraries(openaa_core_smoke_test
     PRIVATE
-        lib_openaa_core
-        lib_openaa_exec
+        openaa_platform_core
+        openaa_platform_exec
 )
 
 target_compile_features(openaa_core_smoke_test PRIVATE cxx_std_20)

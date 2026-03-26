@@ -22,8 +22,8 @@ This project aims to provide a lightweight and modular implementation of key con
 
 This repository now contains a minimal runnable MVP aligned with the current folder layout:
 
-- `modules/core`: basic runtime primitives for logging, lifecycle, and service registration
-- `modules/exec`: a lightweight execution manager that initializes, starts, and stops applications
+- `ara`: standardized ARA-facing interfaces
+- `platform`: OpenAA concrete runtime implementations built behind the ARA interfaces
 - `examples/01_hello_world`: a sample adaptive application that registers and exposes a greeting service
 - `tests/unit`: GoogleTest-based unit tests for lifecycle and service registration behavior
 - `tests/smoke`: smoke coverage for bringing up the execution manager and a test application
@@ -109,7 +109,7 @@ The mapping is:
 Run the built-in execution manager demo:
 
 ```bash
-./build/Release/modules/exec/openaa_exec
+./build/Release/platform/exec/openaa_exec
 ```
 
 Run the hello world adaptive application through the execution manager:

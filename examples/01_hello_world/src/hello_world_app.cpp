@@ -2,16 +2,18 @@
 
 #include <sstream>
 
+#include "openaa/platform/core/application.hpp"
+
 namespace openaa::examples::hello_world {
 
 namespace {
 
-class HelloWorldApp final : public openaa::core::Application {
+class HelloWorldApp final : public openaa::platform::core::Application {
   public:
-    HelloWorldApp() : openaa::core::Application("examples.hello_world") {}
+    HelloWorldApp() : openaa::platform::core::Application("examples.hello_world") {}
 
   private:
-    void OnInitialize(openaa::core::RuntimeContext &context) override {
+    void OnInitialize(ara::core::RuntimeContext &context) override {
         const bool inserted = context.Services().Register({
             .service_id = "examples.hello.greeter",
             .endpoint = "local://hello-greeter",
@@ -26,18 +28,18 @@ class HelloWorldApp final : public openaa::core::Application {
         context.Log().Info(Name(), "Registered greeter service");
     }
 
-    void OnStart(openaa::core::RuntimeContext &context) override {
+    void OnStart(ara::core::RuntimeContext &context) override {
         context.Log().Info(Name(), "Offer greeting: Hello from Adaptive AUTOSAR MVP");
     }
 
-    void OnStop(openaa::core::RuntimeContext &context) override {
+    void OnStop(ara::core::RuntimeContext &context) override {
         context.Log().Info(Name(), "Hello world app stopped");
     }
 };
 
 } // namespace
 
-std::unique_ptr<openaa::core::Application> CreateHelloWorldApp() {
+std::unique_ptr<ara::core::Application> CreateHelloWorldApp() {
     return std::make_unique<HelloWorldApp>();
 }
 

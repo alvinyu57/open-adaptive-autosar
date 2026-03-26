@@ -1,16 +1,17 @@
 #include <iostream>
 
-#include "openaa/core/application.hpp"
-#include "openaa/exec/execution_manager.hpp"
+#include "ara/core/application.hpp"
+#include "openaa/platform/core/application.hpp"
+#include "openaa/platform/exec/execution_manager.hpp"
 
 namespace {
 
-class DiagnosticsApp final : public openaa::core::Application {
+class DiagnosticsApp final : public openaa::platform::core::Application {
   public:
-    DiagnosticsApp() : openaa::core::Application("diagnostics.stub") {}
+    DiagnosticsApp() : openaa::platform::core::Application("diagnostics.stub") {}
 
   private:
-    void OnInitialize(openaa::core::RuntimeContext &context) override {
+    void OnInitialize(ara::core::RuntimeContext &context) override {
         context.Log().Info(Name(), "Initialize diagnostics service");
         context.Services().Register({
             .service_id = "openaa.exec.diagnostics",
@@ -19,11 +20,11 @@ class DiagnosticsApp final : public openaa::core::Application {
         });
     }
 
-    void OnStart(openaa::core::RuntimeContext &context) override {
+    void OnStart(ara::core::RuntimeContext &context) override {
         context.Log().Info(Name(), "Diagnostics service ready");
     }
 
-    void OnStop(openaa::core::RuntimeContext &context) override {
+    void OnStop(ara::core::RuntimeContext &context) override {
         context.Log().Info(Name(), "Diagnostics service stopped");
     }
 };
@@ -31,8 +32,8 @@ class DiagnosticsApp final : public openaa::core::Application {
 } // namespace
 
 int main() {
-    openaa::core::Logger logger(std::cout);
-    openaa::exec::ExecutionManager manager(logger);
+    openaa::platform::core::Logger logger(std::cout);
+    openaa::platform::exec::ExecutionManager manager(logger);
 
     manager.AddApplication(std::make_unique<DiagnosticsApp>());
     manager.Start();
