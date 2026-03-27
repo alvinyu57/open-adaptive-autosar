@@ -42,7 +42,7 @@ jobs:
             -v "${GITHUB_WORKSPACE}:/workspace" \
             -w /workspace \
             openaa-build \
-            bash -lc "./tests/lint/run_clang_format_check.sh" \
+            bash -lc "./scripts/lint/run_clang_format_check.sh" \
             2>&1 | tee "${LINT_RESULTS_DIR}/clang-format.log"
           exit "${PIPESTATUS[0]}"
 
@@ -55,7 +55,7 @@ jobs:
             -v "${GITHUB_WORKSPACE}:/workspace" \
             -w /workspace \
             openaa-build \
-            bash -lc "./tests/lint/run_clang_tidy_check.sh" \
+            bash -lc "./scripts/lint/run_clang_tidy_check.sh" \
             2>&1 | tee "${LINT_RESULTS_DIR}/clang-tidy.log"
           exit "${PIPESTATUS[0]}"
 
@@ -131,7 +131,7 @@ jobs:
         run: docker version
 
       - name: Build project with tests enabled
-        run: ./build.sh --build-tests
+        run: ./scripts/build/build.sh --build-tests
 
       - name: Run unit tests with CTest
         id: ctest_unit
@@ -186,7 +186,7 @@ jobs:
         run: docker version
 
       - name: Build project with tests enabled
-        run: ./build.sh --build-tests
+        run: ./scripts/build/build.sh --build-tests
 
       - name: Run smoke tests with CTest
         id: ctest_smoke

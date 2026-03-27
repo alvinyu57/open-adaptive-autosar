@@ -35,7 +35,8 @@ class ServiceRegistry {
 
 class RuntimeContext {
   public:
-    RuntimeContext(ServiceRegistry &registry, Logger &logger) : registry_(&registry), logger_(&logger) {}
+    RuntimeContext(ServiceRegistry &registry, Logger &logger)
+        : registry_(&registry), logger_(&logger) {}
 
     ServiceRegistry &Services() const {
         return *registry_;

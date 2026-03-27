@@ -13,7 +13,8 @@ namespace {
 std::string TimestampNow() {
     const auto now = std::chrono::system_clock::now();
     const auto seconds = std::chrono::time_point_cast<std::chrono::seconds>(now);
-    const auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(now - seconds).count();
+    const auto milliseconds =
+        std::chrono::duration_cast<std::chrono::milliseconds>(now - seconds).count();
 
     const std::time_t time_now = std::chrono::system_clock::to_time_t(now);
     std::tm tm_snapshot{};
@@ -25,9 +26,9 @@ std::string TimestampNow() {
 #endif
 
     std::ostringstream buffer;
-    
-    buffer << std::put_time(&tm_snapshot, "%F %T") << '.'
-           << std::setw(3) << std::setfill('0') << milliseconds;
+
+    buffer << std::put_time(&tm_snapshot, "%F %T") << '.' << std::setw(3) << std::setfill('0')
+           << milliseconds;
 
     return buffer.str();
 }

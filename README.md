@@ -42,19 +42,19 @@ The layering is:
 ### Option 1: Helper Script
 
 ```bash
-./build.sh
+./scripts/build/build.sh
 ```
 
 Enable examples and tests:
 
 ```bash
-./build.sh --build-examples --build-tests
+./scripts/build/build.sh --build-examples --build-tests
 ```
 
 Build a different configuration:
 
 ```bash
-./build.sh --build-type Debug --shared
+./scripts/build/build.sh --build-type Debug --shared
 ```
 
 Supported options:
@@ -129,19 +129,19 @@ Run the hello world adaptive application through the execution manager:
 Build all test targets first:
 
 ```bash
-./build.sh --build-tests
+./scripts/build/build.sh --build-tests
 ```
 
 Run the unit test binary:
 
 ```bash
-./tests/unit/run_unit_test.sh
+./scripts/test/run_unit_test.sh
 ```
 
 Run the smoke test binary:
 
 ```bash
-./tests/smoke/run_core_smoke_test.sh
+./scripts/test/run_smoke_test.sh
 ```
 
 Run the formatting check:
@@ -151,7 +151,7 @@ docker run --rm \
   -v "$(pwd):/workspace" \
   -w /workspace \
   openaa-build \
-  bash -lc "./tests/lint/run_clang_format_check.sh"
+  bash -lc "./scripts/lint/run_clang_format_check.sh"
 ```
 
 Run the `clang-tidy` check:
@@ -161,7 +161,7 @@ docker run --rm \
   -v "$(pwd):/workspace" \
   -w /workspace \
   openaa-build \
-  bash -lc "./tests/lint/run_clang_tidy_check.sh"
+  bash -lc "./scripts/lint/run_clang_tidy_check.sh"
 ```
 
 ## CI
