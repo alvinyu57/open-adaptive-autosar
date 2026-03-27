@@ -9,17 +9,17 @@
 namespace openaa::exec {
 
 class ExecutionManager final : public ara::exec::ExecutionManager {
-  public:
-    explicit ExecutionManager(ara::core::Logger &logger);
+public:
+    explicit ExecutionManager(ara::core::Logger& logger);
 
     void AddApplication(std::unique_ptr<ara::core::Application> application) override;
     void Start() override;
     void Stop() override;
 
-    const ara::core::ServiceRegistry &Services() const override;
+    const ara::core::ServiceRegistry& Services() const override;
 
-  private:
-    ara::core::Logger *logger_;
+private:
+    ara::core::Logger* logger_;
     openaa::core::ServiceRegistry registry_;
     std::vector<std::unique_ptr<ara::core::Application>> applications_;
 };

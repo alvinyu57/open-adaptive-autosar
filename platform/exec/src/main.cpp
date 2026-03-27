@@ -7,11 +7,12 @@
 namespace {
 
 class DiagnosticsApp final : public openaa::core::Application {
-  public:
-    DiagnosticsApp() : openaa::core::Application("diagnostics.stub") {}
+public:
+    DiagnosticsApp()
+        : openaa::core::Application("diagnostics.stub") {}
 
-  private:
-    void OnInitialize(ara::core::RuntimeContext &context) override {
+private:
+    void OnInitialize(ara::core::RuntimeContext& context) override {
         context.Log().Info(Name(), "Initialize diagnostics service");
         context.Services().Register({
             .service_id = "openaa.exec.diagnostics",
@@ -20,11 +21,11 @@ class DiagnosticsApp final : public openaa::core::Application {
         });
     }
 
-    void OnStart(ara::core::RuntimeContext &context) override {
+    void OnStart(ara::core::RuntimeContext& context) override {
         context.Log().Info(Name(), "Diagnostics service ready");
     }
 
-    void OnStop(ara::core::RuntimeContext &context) override {
+    void OnStop(ara::core::RuntimeContext& context) override {
         context.Log().Info(Name(), "Diagnostics service stopped");
     }
 };

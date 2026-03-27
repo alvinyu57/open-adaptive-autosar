@@ -10,16 +10,17 @@
 namespace {
 
 class RecordingApplication final : public openaa::core::Application {
-  public:
-    RecordingApplication() : openaa::core::Application("tests.unit.recording") {}
+public:
+    RecordingApplication()
+        : openaa::core::Application("tests.unit.recording") {}
 
     bool initialized{false};
     bool started{false};
     bool stopped{false};
     std::size_t registered_services{0U};
 
-  private:
-    void OnInitialize(ara::core::RuntimeContext &context) override {
+private:
+    void OnInitialize(ara::core::RuntimeContext& context) override {
         initialized = true;
         const bool inserted = context.Services().Register({
             .service_id = "tests.unit.recording.service",
@@ -34,11 +35,11 @@ class RecordingApplication final : public openaa::core::Application {
         registered_services = context.Services().List().size();
     }
 
-    void OnStart(ara::core::RuntimeContext &) override {
+    void OnStart(ara::core::RuntimeContext&) override {
         started = true;
     }
 
-    void OnStop(ara::core::RuntimeContext &) override {
+    void OnStop(ara::core::RuntimeContext&) override {
         stopped = true;
     }
 };

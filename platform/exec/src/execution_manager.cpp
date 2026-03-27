@@ -4,7 +4,8 @@
 
 namespace openaa::exec {
 
-ExecutionManager::ExecutionManager(ara::core::Logger &logger) : logger_(&logger) {}
+ExecutionManager::ExecutionManager(ara::core::Logger& logger)
+    : logger_(&logger) {}
 
 void ExecutionManager::AddApplication(std::unique_ptr<ara::core::Application> application) {
     logger_->Info("exec", "Register application: " + application->Name());
@@ -15,7 +16,7 @@ void ExecutionManager::Start() {
     ara::core::RuntimeContext context(registry_, *logger_);
     logger_->Info("exec", "Execution manager start");
 
-    for (auto &application : applications_) {
+    for (auto& application : applications_) {
         logger_->Info("exec", "Initialize " + application->Name());
         application->Initialize(context);
 
@@ -40,7 +41,7 @@ void ExecutionManager::Stop() {
     logger_->Info("exec", "Execution manager stopped");
 }
 
-const ara::core::ServiceRegistry &ExecutionManager::Services() const {
+const ara::core::ServiceRegistry& ExecutionManager::Services() const {
     return registry_;
 }
 

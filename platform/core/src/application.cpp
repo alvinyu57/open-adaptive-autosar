@@ -35,7 +35,8 @@ std::string TimestampNow() {
 
 } // namespace
 
-Logger::Logger(std::ostream &output) : output_(&output) {}
+Logger::Logger(std::ostream& output)
+    : output_(&output) {}
 
 void Logger::Info(std::string_view component, std::string_view message) const {
     (*output_) << "[" << TimestampNow() << "] [INFO] [" << component << "] " << message << '\n';
@@ -61,16 +62,17 @@ std::vector<ara::core::ServiceEntry> ServiceRegistry::List() const {
     std::vector<ara::core::ServiceEntry> entries;
     entries.reserve(services_.size());
 
-    for (const auto &[_, entry] : services_) {
+    for (const auto& [_, entry] : services_) {
         entries.push_back(entry);
     }
 
     return entries;
 }
 
-Application::Application(std::string name) : name_(std::move(name)) {}
+Application::Application(std::string name)
+    : name_(std::move(name)) {}
 
-void Application::Initialize(ara::core::RuntimeContext &context) {
+void Application::Initialize(ara::core::RuntimeContext& context) {
     if (state_ != ara::core::ApplicationState::kCreated) {
         throw std::logic_error("Application can only be initialized once");
     }
@@ -79,7 +81,7 @@ void Application::Initialize(ara::core::RuntimeContext &context) {
     state_ = ara::core::ApplicationState::kInitialized;
 }
 
-void Application::Run(ara::core::RuntimeContext &context) {
+void Application::Run(ara::core::RuntimeContext& context) {
     if (state_ != ara::core::ApplicationState::kInitialized) {
         throw std::logic_error("Application must be initialized before running");
     }
@@ -88,7 +90,7 @@ void Application::Run(ara::core::RuntimeContext &context) {
     state_ = ara::core::ApplicationState::kRunning;
 }
 
-void Application::Stop(ara::core::RuntimeContext &context) {
+void Application::Stop(ara::core::RuntimeContext& context) {
     if (state_ == ara::core::ApplicationState::kStopped ||
         state_ == ara::core::ApplicationState::kCreated) {
         return;
@@ -98,7 +100,7 @@ void Application::Stop(ara::core::RuntimeContext &context) {
     state_ = ara::core::ApplicationState::kStopped;
 }
 
-const std::string &Application::Name() const {
+const std::string& Application::Name() const {
     return name_;
 }
 

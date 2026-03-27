@@ -9,11 +9,12 @@
 namespace {
 
 class TestApp final : public openaa::core::Application {
-  public:
-    TestApp() : openaa::core::Application("tests.smoke") {}
+public:
+    TestApp()
+        : openaa::core::Application("tests.smoke") {}
 
-  private:
-    void OnInitialize(ara::core::RuntimeContext &context) override {
+private:
+    void OnInitialize(ara::core::RuntimeContext& context) override {
         const bool inserted = context.Services().Register({
             .service_id = "tests.smoke.service",
             .endpoint = "local://tests-smoke",
@@ -25,8 +26,9 @@ class TestApp final : public openaa::core::Application {
         }
     }
 
-    void OnStart(ara::core::RuntimeContext &) override {}
-    void OnStop(ara::core::RuntimeContext &) override {}
+    void OnStart(ara::core::RuntimeContext&) override {}
+
+    void OnStop(ara::core::RuntimeContext&) override {}
 };
 
 } // namespace

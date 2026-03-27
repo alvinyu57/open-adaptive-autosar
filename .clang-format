@@ -1,12 +1,56 @@
+---
+Language: Cpp
 BasedOnStyle: LLVM
+
+# Adaptive AUTOSAR projects usually favor conservative, highly readable C++14
+# formatting over aggressive compaction.
+Standard: c++14
 IndentWidth: 4
 ContinuationIndentWidth: 4
+TabWidth: 4
+UseTab: Never
 ColumnLimit: 100
-SortIncludes: Never
-IncludeBlocks: Preserve
+
+AccessModifierOffset: -4
+IndentAccessModifiers: false
+NamespaceIndentation: None
+IndentCaseLabels: true
+IndentCaseBlocks: true
+
 BreakBeforeBraces: Attach
+AllowShortBlocksOnASingleLine: Never
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortEnumsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLambdasOnASingleLine: Empty
+AllowShortLoopsOnASingleLine: false
+
+BinPackArguments: false
+BinPackParameters: false
+AlignAfterOpenBracket: Align
 AlignConsecutiveAssignments: false
 AlignConsecutiveDeclarations: false
+AlignOperands: Align
+AlignTrailingComments: true
+
 Cpp11BracedListStyle: true
+SortIncludes: Never
+IncludeBlocks: Preserve
+FixNamespaceComments: true
+
+PointerAlignment: Left
+ReferenceAlignment: Left
 SpaceBeforeParens: ControlStatements
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+SpaceInEmptyParentheses: false
+
+ConstructorInitializerIndentWidth: 4
+BreakConstructorInitializers: BeforeColon
+PackConstructorInitializers: Never
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+
+EmptyLineBeforeAccessModifier: LogicalBlock
+SeparateDefinitionBlocks: Always
+MaxEmptyLinesToKeep: 1
