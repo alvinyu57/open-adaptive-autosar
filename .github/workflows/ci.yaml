@@ -86,14 +86,14 @@ jobs:
             } >> "${GITHUB_STEP_SUMMARY}"
           fi
 
-          if [ -f "${LINT_RESULTS_DIR}/clang-tidy.log" ]; then
+          if [ -f "build-clang-tidy/results/clang-tidy-result.txt" ]; then
             {
-              echo "### clang-tidy Log"
+              echo "### clang-tidy Result"
               echo
-              echo "<details><summary>Show clang-tidy output</summary>"
+              echo "<details><summary>Show clang-tidy result</summary>"
               echo
               echo '```text'
-              sed -n '1,120p' "${LINT_RESULTS_DIR}/clang-tidy.log"
+              sed -n '1,120p' build-clang-tidy/results/clang-tidy-result.txt
               echo '```'
               echo "</details>"
               echo
