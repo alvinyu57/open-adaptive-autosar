@@ -18,25 +18,6 @@ This project aims to provide a lightweight and modular implementation of key con
 > * Academic research
 > * Middleware experimentation
 
-## MVP Scope
-
-This repository now contains a minimal runnable MVP aligned with the current folder layout:
-
-- `ara`: standardized ARA-facing interfaces
-- `platform`: OpenAA concrete runtime implementations built behind the ARA interfaces
-- `examples/01_hello_world`: a sample adaptive application that registers and exposes a greeting service
-- `tests/unit`: GoogleTest-based unit tests for lifecycle and service registration behavior
-- `tests/smoke`: smoke coverage for bringing up the execution manager and a test application
-- `tests/lint`: `clang-format` and `clang-tidy` helper scripts used locally and in CI
-
-The MVP intentionally keeps everything in-process so the architecture stays easy to understand before introducing IPC, SOME/IP, manifests, or process supervision.
-
-The layering is:
-
-- `ara/...`: interface contracts
-- `platform/...`: default OpenAA implementation of those contracts
-- `examples/...`: code that consumes the contracts and platform runtime
-
 ## Build
 
 ### Option 1: Helper Script
