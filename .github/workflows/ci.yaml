@@ -131,7 +131,9 @@ jobs:
         run: docker version
 
       - name: Build project with tests enabled
-        run: ./scripts/build/build.sh --build-tests
+        run: |
+          ls -la
+          ./scripts/build/build.sh --build-tests
 
       - name: Run unit tests with CTest
         id: ctest_unit
