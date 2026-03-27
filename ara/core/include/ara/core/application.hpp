@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <string>
@@ -8,7 +9,7 @@
 
 namespace ara::core {
 
-enum class ApplicationState {
+enum class ApplicationState : std::uint8_t {
     kCreated,
     kInitialized,
     kRunning,
