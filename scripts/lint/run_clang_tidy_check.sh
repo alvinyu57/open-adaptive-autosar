@@ -11,8 +11,6 @@ RESULTS_DIR="${BUILD_ROOT}/results"
 RESULT_FILE="${RESULTS_DIR}/clang-tidy-result.txt"
 COMPILE_COMMANDS="${BUILD_DIR}/compile_commands.json"
 
-rm -rf "${BUILD_ROOT}" &> /dev/null
-
 cd "${PROJECT_ROOT}"
 
 conan profile detect --force
@@ -21,13 +19,17 @@ conan install . --output-folder="${BUILD_ROOT}" --build=missing \
     -o 'shared=False' \
     -o 'build_examples=False' \
     -o 'build_tests=True'
-conan build . --output-folder="${BUILD_ROOT}" \
-    -o 'shared=False' \
-    -o 'build_examples=False' \
-    -o 'build_tests=True'
+
+cmake -S "${PROJECT_ROOT}" -B "${BUILD_DIR}" \
+    -DCMAKE_TOOLCHAIN_FILE="${BUILD_DIR}/generators/conan_toolchain.cmake" \
+    -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+    -DBUILD_SHARED_LIBS=OFF \
+    -DOPEN_AA_BUILD_EXAMPLES=OFF \
+    -DOPEN_AA_BUILD_TESTS=ON
 
 mkdir -p "${RESULTS_DIR}"
-touch "${RESULT_FILE}"
+: > "${RESULT_FILE}"
 
 if [ ! -f "${COMPILE_COMMANDS}" ]; then
     echo "compile_commands.json not found: ${COMPILE_COMMANDS}" >&2
