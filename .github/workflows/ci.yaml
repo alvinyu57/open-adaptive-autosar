@@ -1,0 +1,226 @@
+name: PR CI
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+
+concurrency:
+  group: pr-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  clang-checks:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      LINT_RESULTS_DIR: lint-results
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify Docker availability
+        run: docker version
+
+      - name: Build project image
+        run: docker build --build-arg USER_ID="$(id -u)" --build-arg GROUP_ID="$(id -g)" -f Dockerfile -t openaa-build .
+
+      - name: Run clang-format check
+        id: clang_format
+        continue-on-error: true
+        run: |
+          mkdir -p "${LINT_RESULTS_DIR}"
+          docker run --rm \
+            -v "${GITHUB_WORKSPACE}:/workspace" \
+            -w /workspace \
+            openaa-build \
+            bash -lc "./scripts/lint/run_clang_format_check.sh" \
+            2>&1 | tee "${LINT_RESULTS_DIR}/clang-format.log"
+          exit "${PIPESTATUS[0]}"
+
+      - name: Run clang-tidy check
+        id: clang_tidy
+        continue-on-error: true
+        run: |
+          mkdir -p "${LINT_RESULTS_DIR}"
+          docker run --rm \
+            -v "${GITHUB_WORKSPACE}:/workspace" \
+            -w /workspace \
+            openaa-build \
+            bash -lc "./scripts/lint/run_clang_tidy_check.sh" \
+            2>&1 | tee "${LINT_RESULTS_DIR}/clang-tidy.log"
+          exit "${PIPESTATUS[0]}"
+
+      - name: Write job summary
+        if: always()
+        run: |
+          {
+            echo "## Clang Summary"
+            echo
+            echo "| Check | Result |"
+            echo "| --- | --- |"
+            echo "| clang-format | ${{ steps.clang_format.outcome }} |"
+            echo "| clang-tidy | ${{ steps.clang_tidy.outcome }} |"
+            echo
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+          if [ -f "${LINT_RESULTS_DIR}/clang-format.log" ]; then
+            {
+              echo "### clang-format Log"
+              echo
+              echo "<details><summary>Show clang-format output</summary>"
+              echo
+              echo '```text'
+              sed -n '1,120p' "${LINT_RESULTS_DIR}/clang-format.log"
+              echo '```'
+              echo "</details>"
+              echo
+            } >> "${GITHUB_STEP_SUMMARY}"
+          fi
+
+          if [ -f "build-clang-tidy/results/clang-tidy-result.txt" ]; then
+            {
+              echo "### clang-tidy Result"
+              echo
+              echo "<details><summary>Show clang-tidy result</summary>"
+              echo
+              echo '```text'
+              sed -n '1,120p' build-clang-tidy/results/clang-tidy-result.txt
+              echo '```'
+              echo "</details>"
+              echo
+            } >> "${GITHUB_STEP_SUMMARY}"
+          fi
+
+      - name: Upload lint reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-reports
+          path: |
+            lint-results/clang-format.log
+            lint-results/clang-tidy.log
+            build-clang-tidy/results/clang-tidy-result.txt
+          if-no-files-found: warn
+
+      - name: Fail workflow when checks fail
+        if: steps.clang_format.outcome == 'failure' || steps.clang_tidy.outcome == 'failure'
+        run: exit 1
+
+  unit-tests:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      BUILD_DIR: build/Release
+      TEST_RESULTS_DIR: test-results
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify Docker availability
+        run: docker version
+
+      - name: Build project with tests enabled
+        run: ./scripts/build/build.sh --build-tests
+
+      - name: Run unit tests with CTest
+        id: ctest_unit
+        continue-on-error: true
+        run: |
+          mkdir -p "${TEST_RESULTS_DIR}"
+          docker run --rm \
+            -v "${GITHUB_WORKSPACE}:/workspace" \
+            -w /workspace \
+            openaa-build \
+            bash -lc "
+              ctest \
+                --test-dir '${BUILD_DIR}' \
+                -L unit \
+                --output-on-failure \
+                --output-junit '/workspace/${TEST_RESULTS_DIR}/unit-report.xml'
+            "
+
+      - name: Write job summary
+        if: always()
+        run: |
+          python3 scripts/ci/write_test_summary.py \
+            "${TEST_RESULTS_DIR}/unit-report.xml" \
+            "Unit Test Summary" \
+            >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Upload unit test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-report
+          path: test-results/unit-report.xml
+          if-no-files-found: warn
+
+      - name: Fail workflow when checks fail
+        if: steps.ctest_unit.outcome == 'failure'
+        run: exit 1
+
+  smoke-tests:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      BUILD_DIR: build/Release
+      TEST_RESULTS_DIR: test-results
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify Docker availability
+        run: docker version
+
+      - name: Build project with tests enabled
+        run: ./scripts/build/build.sh --build-tests
+
+      - name: Run smoke tests with CTest
+        id: ctest_smoke
+        continue-on-error: true
+        run: |
+          mkdir -p "${TEST_RESULTS_DIR}"
+          docker run --rm \
+            -v "${GITHUB_WORKSPACE}:/workspace" \
+            -w /workspace \
+            openaa-build \
+            bash -lc "
+              ctest \
+                --test-dir '${BUILD_DIR}' \
+                -L smoke \
+                --output-on-failure \
+                --output-junit '/workspace/${TEST_RESULTS_DIR}/smoke-report.xml'
+            "
+
+      - name: Write job summary
+        if: always()
+        run: |
+          python3 scripts/ci/write_test_summary.py \
+            "${TEST_RESULTS_DIR}/smoke-report.xml" \
+            "Smoke Test Summary" \
+            >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Upload smoke test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-test-report
+          path: test-results/smoke-report.xml
+          if-no-files-found: warn
+
+      - name: Fail workflow when checks fail
+        if: steps.ctest_smoke.outcome == 'failure'
+        run: exit 1
