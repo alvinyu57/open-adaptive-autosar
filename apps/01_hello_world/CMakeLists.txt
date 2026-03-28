@@ -28,3 +28,9 @@ target_link_libraries(openaa_example_hello_world_runner
         openaa_platform_exec
         lib_openaa_example_hello_world
 )
+
+configure_file(
+    manifests/hello_world.json
+    ${CMAKE_CURRENT_BINARY_DIR}/manifests/hello_world.json
+    COPYONLY
+)

@@ -1,3 +1,5 @@
+#include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <memory>
 #include <stdexcept>
@@ -34,10 +36,25 @@ private:
 } // namespace
 
 int main() {
+    const auto manifest_path =
+        std::filesystem::temp_directory_path() / "openaa_core_smoke_manifest.json";
+    {
+        std::ofstream output(manifest_path);
+        output << R"({
+            "applicationId": "tests.smoke",
+            "shortName": "tests.smoke",
+            "executable": "openaa_core_smoke_test",
+            "autoStart": true
+        })";
+    }
+
     openaa::core::Logger logger(std::cout);
     openaa::exec::ExecutionManager manager(logger);
+    manager.RegisterApplicationFactory("tests.smoke", []() {
+        return std::make_unique<TestApp>();
+    });
 
-    manager.AddApplication(std::make_unique<TestApp>());
+    manager.LoadApplicationManifest(manifest_path.string());
     manager.Start();
 
     const auto services = manager.Services().List();
@@ -47,5 +64,6 @@ int main() {
     }
 
     manager.Stop();
+    std::filesystem::remove(manifest_path);
     return 0;
 }

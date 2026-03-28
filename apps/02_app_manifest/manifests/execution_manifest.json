@@ -1,0 +1,15 @@
+{
+    "processName": "app_manifest_demo_process",
+    "applicationId": "apps.02_app_manifest.demo",
+    "applicationManifest": "application_manifest.json",
+    "startup": {
+        "autoStart": true,
+        "startupOrder": 10,
+        "functionGroup": "MachineFG",
+        "functionGroupState": "Startup"
+    },
+    "termination": {
+        "timeoutMs": 2000,
+        "restartAttempts": 3
+    }
+}

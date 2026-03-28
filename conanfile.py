@@ -12,14 +12,14 @@ class AdaptiveAutosarConan(ConanFile):
     options = {
         "shared": [True, False],
         "fPIC": [True, False],
-        "build_examples": [True, False],
+        "build_apps": [True, False],
         "build_tests": [True, False],
     }
 
     default_options = {
         "shared": False,
         "fPIC": True,
-        "build_examples": False,
+        "build_apps": False,
         "build_tests": False,
     }
 
@@ -45,7 +45,7 @@ class AdaptiveAutosarConan(ConanFile):
     def generate(self):
         toolchain = CMakeToolchain(self)
         toolchain.variables["BUILD_SHARED_LIBS"] = self.options.shared
-        toolchain.variables["OPEN_AA_BUILD_EXAMPLES"] = self.options.build_examples
+        toolchain.variables["OPEN_AA_BUILD_APPS"] = self.options.build_apps
         toolchain.variables["OPEN_AA_BUILD_TESTS"] = self.options.build_tests
         toolchain.generate()
 

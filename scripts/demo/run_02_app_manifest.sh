@@ -7,4 +7,4 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 BUILD_ROOT="${PROJECT_ROOT}/build/Release"
 
 "${BUILD_ROOT}/platform/exec/openaa_exec"
-"${BUILD_ROOT}/examples/01_hello_world/openaa_example_hello_world_runner"
+"${BUILD_ROOT}/apps/02_app_manifest/openaa_app_manifest_demo"

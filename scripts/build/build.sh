@@ -13,7 +13,7 @@ usage() {
 Usage: ./build.sh [options]
 
 Options:
-  --build-examples               Enable example targets
+  --build-apps                   Enable application targets
   --build-tests                  Enable test targets
   --shared                       Build shared libraries
   --build-type <type>            Conan build type, e.g. Release or Debug
@@ -21,13 +21,13 @@ Options:
   --help                         Show this help message
 
 Examples:
-  ./build.sh --build-examples --build-tests
+  ./build.sh --build-apps --build-tests
   ./build.sh --build-type Debug --shared
   ./build.sh --conan-option "-o &:some_other_option=True"
 EOF
 }
 
-BUILD_EXAMPLES="False"
+BUILD_APPS="False"
 BUILD_TESTS="False"
 BUILD_SHARED="False"
 
@@ -35,8 +35,8 @@ EXTRA_CONAN_OPTIONS=()
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --build-examples)
-            BUILD_EXAMPLES="True"
+        --build-apps)
+            BUILD_APPS="True"
             shift
             ;;
         --build-tests)
@@ -89,7 +89,7 @@ docker run --rm \
         echo 'Build configuration:' &&
         echo '  build_type=${CONAN_BUILD_TYPE}' &&
         echo '  shared=${BUILD_SHARED}' &&
-        echo '  build_examples=${BUILD_EXAMPLES}' &&
+        echo '  build_apps=${BUILD_APPS}' &&
         echo '  build_tests=${BUILD_TESTS}' &&
 
         rm -rf build/${CONAN_BUILD_TYPE} &&
@@ -99,7 +99,7 @@ docker run --rm \
         conan install . --output-folder=build --build=missing \
             -s build_type=${CONAN_BUILD_TYPE} \
             -o 'shared=${BUILD_SHARED}' \
-            -o 'build_examples=${BUILD_EXAMPLES}' \
+            -o 'build_apps=${BUILD_APPS}' \
             -o 'build_tests=${BUILD_TESTS}' \
             ${CONAN_OPTIONS} &&
 
@@ -108,6 +108,6 @@ docker run --rm \
 
         conan build . --output-folder=build \
             -o 'shared=${BUILD_SHARED}' \
-            -o 'build_examples=${BUILD_EXAMPLES}' \
+            -o 'build_apps=${BUILD_APPS}' \
             -o 'build_tests=${BUILD_TESTS}'
     "

@@ -1,5 +1,7 @@
 add_library(openaa_platform_exec
+    src/application_manifest_loader.cpp
     src/execution_manager.cpp
+    src/manifest_path.cpp
 )
 
 set_target_properties(openaa_platform_exec PROPERTIES
@@ -26,4 +28,10 @@ add_executable(openaa_exec
 target_link_libraries(openaa_exec
     PRIVATE
         openaa_platform_exec
+)
+
+configure_file(
+    manifests/diagnostics.json
+    ${CMAKE_CURRENT_BINARY_DIR}/manifests/diagnostics.json
+    COPYONLY
 )

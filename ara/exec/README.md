@@ -11,6 +11,7 @@ This layer does not implement startup policy itself. Concrete execution-manager 
 ## Main Building Blocks
 
 - `ara/exec/execution_manager.hpp`: `ExecutionManager` interface for lifecycle orchestration of adaptive applications
+- `ara/exec/application_manifest.hpp`: manifest data model for Adaptive AUTOSAR-style application startup metadata
 
 ## Software Architecture Requirements
 
@@ -24,6 +25,8 @@ This layer does not implement startup policy itself. Concrete execution-manager 
 
 - `ExecutionManager` shall accept ownership of applications through `std::unique_ptr<ara::core::Application>`.
 - `ExecutionManager::AddApplication()` shall allow platform implementations to register application instances before startup.
+- `ExecutionManager::RegisterApplicationFactory()` shall allow manifest-driven runtimes to bind application identifiers to concrete application factories.
+- `ExecutionManager::LoadApplicationManifest()` shall allow platform runtimes to load application startup metadata before execution begins.
 - `ara/exec` shall not mandate a specific ownership container or logging strategy for the underlying platform implementation.
 
 ### Startup behavior
@@ -50,4 +53,4 @@ This layer does not implement startup policy itself. Concrete execution-manager 
 ## Current Limitations
 
 - The current repository provides one concrete in-process implementation in `platform/exec`.
-- Manifest-driven startup, restart policy, health supervision, and process isolation are not yet represented in the interface layer.
+- Restart policy, health supervision, and process isolation are not yet represented in the interface layer.

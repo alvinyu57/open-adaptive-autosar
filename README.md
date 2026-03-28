@@ -99,10 +99,50 @@ Run the built-in execution manager demo:
 ./build/Release/platform/exec/openaa_exec
 ```
 
+Or point the execution manager at a different manifest:
+
+```bash
+./build/Release/platform/exec/openaa_exec /path/to/application_manifest.json
+```
+
 Run the hello world adaptive application through the execution manager:
 
 ```bash
 ./build/Release/examples/01_hello_world/openaa_example_hello_world_runner
+```
+
+## Application Manifest
+
+The execution manager now supports loading a simplified Adaptive AUTOSAR-style application
+manifest from JSON. The current in-process runtime recognizes these fields:
+
+- `applicationId`: stable identifier used to resolve the registered application factory
+- `shortName`: AUTOSAR-style application short name and expected runtime application name
+- `executable`: executable name recorded in the manifest for process-launch alignment
+- `arguments`: launch arguments reserved for a future out-of-process runner
+- `environmentVariables`: environment key/value pairs reserved for a future process launcher
+- `providedServices`: service declarations exposed as manifest metadata
+- `autoStart`: whether the execution manager should start the application automatically
+
+Example:
+
+```json
+{
+  "applicationId": "examples.hello_world",
+  "shortName": "examples.hello_world",
+  "executable": "openaa_example_hello_world_runner",
+  "arguments": [],
+  "environmentVariables": {
+    "OPENAA_EXAMPLE_PROFILE": "hello_world"
+  },
+  "providedServices": [
+    {
+      "serviceId": "examples.hello.greeter",
+      "endpoint": "local://hello-greeter"
+    }
+  ],
+  "autoStart": true
+}
 ```
 
 ## Tests And Lint
@@ -157,7 +197,6 @@ Each job writes its own GitHub Job Summary and uploads its raw report or log as 
 
 ## Suggested Next Steps
 
-- Add application manifests and load them from JSON or YAML
 - Split application launch into separate processes
 - Introduce transport abstractions before implementing SOME/IP
 - Expand runtime behavior and middleware coverage beyond the current MVP

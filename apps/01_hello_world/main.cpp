@@ -1,15 +1,25 @@
+#include <filesystem>
 #include <iostream>
 #include <sstream>
 
 #include "openaa/examples/hello_world/hello_world_app.hpp"
 #include "openaa/core/application.hpp"
 #include "openaa/exec/execution_manager.hpp"
+#include "openaa/exec/manifest_path.hpp"
 
-int main() {
+int main(int argc, char* argv[]) {
     openaa::core::Logger logger(std::cout);
     openaa::exec::ExecutionManager manager(logger);
 
-    manager.AddApplication(openaa::examples::hello_world::CreateHelloWorldApp());
+    manager.RegisterApplicationFactory(
+        "examples.hello_world",
+        openaa::examples::hello_world::CreateHelloWorldApp);
+
+    const std::filesystem::path manifest_path =
+        argc > 1 ? std::filesystem::path(argv[1])
+                 : openaa::exec::ResolveManifestPath(argv[0], "hello_world.json");
+
+    manager.LoadApplicationManifest(manifest_path.string());
     manager.Start();
 
     for (const auto& service : manager.Services().List()) {

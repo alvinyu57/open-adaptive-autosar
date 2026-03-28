@@ -1,0 +1,16 @@
+{
+    "applicationId": "examples.hello_world",
+    "shortName": "examples.hello_world",
+    "executable": "openaa_example_hello_world_runner",
+    "arguments": [],
+    "environmentVariables": {
+        "OPENAA_EXAMPLE_PROFILE": "hello_world"
+    },
+    "providedServices": [
+        {
+            "serviceId": "examples.hello.greeter",
+            "endpoint": "local://hello-greeter"
+        }
+    ],
+    "autoStart": true
+}
