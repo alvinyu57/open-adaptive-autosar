@@ -93,7 +93,7 @@ fi
 if [ ! -f "${BUILD_DIR}/compile_commands.json" ]; then
     echo "Clang-tidy build directory not found. Configuring and generating compile_commands.json..."
 
-    conan profile detect --force --profile:build=default
+    conan profile detect --force && 
     conan install . --output-folder=build --build=missing \
         -s build_type=Release \
         -o shared=False \
