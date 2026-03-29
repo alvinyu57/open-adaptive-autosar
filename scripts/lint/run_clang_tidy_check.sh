@@ -86,11 +86,9 @@ if [ ! -f "${BUILD_DIR}/compile_commands.json" ]; then
         -o build_apps="${BUILD_APPS}" \
         -o build_tests="${BUILD_TESTS}"
 
-    cmake -S "${PROJECT_ROOT}" -B "${BUILD_DIR}" \
-        -DCMAKE_BUILD_TYPE=${CONAN_BUILD_TYPE} \
-        -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-        -DOPEN_AA_BUILD_APPS=${BUILD_APPS} \
-        -DOPEN_AA_BUILD_TESTS=${BUILD_TESTS}
+    conan build . --output-folder=${BUILD_DIR} \
+        -o 'build_apps=${BUILD_APPS}' \
+        -o 'build_tests=${BUILD_TESTS}'
 
 else
     echo "Clang-tidy build directory already configured."
