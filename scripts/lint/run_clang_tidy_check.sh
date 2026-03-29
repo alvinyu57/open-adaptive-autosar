@@ -92,11 +92,19 @@ fi
 
 if [ ! -f "${BUILD_DIR}/compile_commands.json" ]; then
     echo "Clang-tidy build directory not found. Configuring and generating compile_commands.json..."
+
+    conan install . --output-folder=build --build=missing \
+        -s build_type=Release \
+        -o shared=False \
+        -o build_apps=${BUILD_APPS} \
+        -o build_tests=${BUILD_TESTS}
+
     cmake -S "${PROJECT_ROOT}" -B "${BUILD_DIR}" \
         -DCMAKE_BUILD_TYPE=Debug \
         -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
         -DOPEN_AA_BUILD_APPS=${BUILD_APPS} \
-        -DOPEN_AA_BUILD_TESTS="${BUILD_TESTS}"
+        -DOPEN_AA_BUILD_TESTS=${BUILD_TESTS}
+
 else
     echo "Clang-tidy build directory already configured."
 fi
