@@ -5,14 +5,13 @@
 #include <gtest/gtest.h>
 
 #include "ara/core/application.hpp"
-#include "openaa/core/application.hpp"
 
 namespace {
 
-class RecordingApplication final : public openaa::core::Application {
+class RecordingApplication final : public ara::core::Application {
 public:
     RecordingApplication()
-        : openaa::core::Application("tests.unit.recording") {}
+        : ara::core::Application("tests.unit.recording") {}
 
     bool initialized{false};
     bool started{false};
@@ -45,7 +44,7 @@ private:
 };
 
 TEST(ServiceRegistryTest, RejectsDuplicateServiceId) {
-    openaa::core::ServiceRegistry registry;
+    ara::core::ServiceRegistry registry;
 
     EXPECT_TRUE(registry.Register({
         .service_id = "svc.alpha",
@@ -66,8 +65,8 @@ TEST(ServiceRegistryTest, RejectsDuplicateServiceId) {
 
 TEST(ApplicationTest, TransitionsThroughLifecycleAndInvokesHooks) {
     std::ostringstream logs;
-    openaa::core::Logger logger(logs);
-    openaa::core::ServiceRegistry registry;
+    ara::core::Logger logger(logs);
+    ara::core::ServiceRegistry registry;
     ara::core::RuntimeContext context(registry, logger);
     RecordingApplication application;
 
@@ -89,8 +88,8 @@ TEST(ApplicationTest, TransitionsThroughLifecycleAndInvokesHooks) {
 
 TEST(ApplicationTest, RejectsRunningBeforeInitialization) {
     std::ostringstream logs;
-    openaa::core::Logger logger(logs);
-    openaa::core::ServiceRegistry registry;
+    ara::core::Logger logger(logs);
+    ara::core::ServiceRegistry registry;
     ara::core::RuntimeContext context(registry, logger);
     RecordingApplication application;
 
@@ -99,8 +98,8 @@ TEST(ApplicationTest, RejectsRunningBeforeInitialization) {
 
 TEST(ApplicationTest, StopBeforeInitializationIsANoop) {
     std::ostringstream logs;
-    openaa::core::Logger logger(logs);
-    openaa::core::ServiceRegistry registry;
+    ara::core::Logger logger(logs);
+    ara::core::ServiceRegistry registry;
     ara::core::RuntimeContext context(registry, logger);
     RecordingApplication application;
 

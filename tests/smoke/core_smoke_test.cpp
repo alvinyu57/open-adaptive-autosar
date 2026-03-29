@@ -5,15 +5,14 @@
 #include <stdexcept>
 
 #include "ara/core/application.hpp"
-#include "openaa/core/application.hpp"
-#include "openaa/exec/execution_manager.hpp"
+#include "ara/exec/execution_manager.hpp"
 
 namespace {
 
-class TestApp final : public openaa::core::Application {
+class TestApp final : public ara::core::Application {
 public:
     TestApp()
-        : openaa::core::Application("tests.smoke") {}
+        : ara::core::Application("tests.smoke") {}
 
 private:
     void OnInitialize(ara::core::RuntimeContext& context) override {
@@ -48,8 +47,8 @@ int main() {
         })";
     }
 
-    openaa::core::Logger logger(std::cout);
-    openaa::exec::ExecutionManager manager(logger);
+    ara::core::Logger logger(std::cout);
+    ara::exec::ExecutionManager manager(logger);
     manager.RegisterApplicationFactory("tests.smoke", []() {
         return std::make_unique<TestApp>();
     });

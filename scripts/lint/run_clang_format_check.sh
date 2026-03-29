@@ -19,9 +19,8 @@ else
     mapfile -t SOURCE_FILES < <(
         find \
             "${PROJECT_ROOT}/ara" \
-            "${PROJECT_ROOT}/platform" \
             "${PROJECT_ROOT}/tests" \
-            "${PROJECT_ROOT}/examples" \
+            "${PROJECT_ROOT}/apps" \
             -type f \
             \( -name '*.c' -o -name '*.cc' -o -name '*.cpp' -o -name '*.h' -o -name '*.hpp' \) \
             | sort

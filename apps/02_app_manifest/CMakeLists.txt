@@ -14,7 +14,6 @@ target_include_directories(openaa_app_manifest_lib
 target_link_libraries(openaa_app_manifest_lib
     PUBLIC
         ara_core
-        openaa_platform_core
 )
 
 target_compile_features(openaa_app_manifest_lib PUBLIC cxx_std_20)
@@ -29,7 +28,7 @@ set_target_properties(openaa_app_manifest_demo PROPERTIES
 
 target_link_libraries(openaa_app_manifest_demo
     PRIVATE
-        openaa_platform_exec
+        ara_exec
         openaa_app_manifest_lib
 )
 

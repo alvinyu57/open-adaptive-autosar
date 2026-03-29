@@ -10,8 +10,7 @@ option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 option(OPEN_AA_BUILD_APPS "Build applications" ON)
 option(OPEN_AA_BUILD_TESTS "Build test targets" OFF)
 
-add_subdirectory(ara)
-add_subdirectory(platform)
+add_subdirectory(src)
 
 if(OPEN_AA_BUILD_APPS)
     add_subdirectory(apps)

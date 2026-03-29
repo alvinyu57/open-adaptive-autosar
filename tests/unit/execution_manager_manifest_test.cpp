@@ -5,15 +5,15 @@
 
 #include <gtest/gtest.h>
 
-#include "openaa/core/application.hpp"
-#include "openaa/exec/execution_manager.hpp"
+#include "ara/core/application.hpp"
+#include "ara/exec/execution_manager.hpp"
 
 namespace {
 
-class ManifestApplication final : public openaa::core::Application {
+class ManifestApplication final : public ara::core::Application {
 public:
     ManifestApplication()
-        : openaa::core::Application("tests.unit.manifested") {}
+        : ara::core::Application("tests.unit.manifested") {}
 
 private:
     void OnInitialize(ara::core::RuntimeContext& context) override {
@@ -62,8 +62,8 @@ TEST(ExecutionManagerManifestTest, LoadsManifestAndStartsRegisteredApplication) 
         "openaa_manifest_success.json");
 
     std::ostringstream logs;
-    openaa::core::Logger logger(logs);
-    openaa::exec::ExecutionManager manager(logger);
+    ara::core::Logger logger(logs);
+    ara::exec::ExecutionManager manager(logger);
     manager.RegisterApplicationFactory("tests.unit.manifested", []() {
         return std::make_unique<ManifestApplication>();
     });
@@ -73,7 +73,8 @@ TEST(ExecutionManagerManifestTest, LoadsManifestAndStartsRegisteredApplication) 
     ASSERT_EQ(manifests.size(), 1U);
     EXPECT_EQ(manifests.front().arguments.size(), 1U);
     EXPECT_EQ(manifests.front().environment_variables.at("OPENAA_PROFILE"), "unit");
-    EXPECT_EQ(manifests.front().provided_services.front().service_id, "tests.unit.manifested.service");
+    EXPECT_EQ(manifests.front().provided_services.front().service_id,
+              "tests.unit.manifested.service");
 
     manager.Start();
 
@@ -97,8 +98,8 @@ TEST(ExecutionManagerManifestTest, RejectsManifestWithoutRegisteredFactory) {
         "openaa_manifest_missing_factory.json");
 
     std::ostringstream logs;
-    openaa::core::Logger logger(logs);
-    openaa::exec::ExecutionManager manager(logger);
+    ara::core::Logger logger(logs);
+    ara::exec::ExecutionManager manager(logger);
 
     EXPECT_THROW(manager.LoadApplicationManifest(manifest_path.string()), std::runtime_error);
 
@@ -116,8 +117,8 @@ TEST(ExecutionManagerManifestTest, DoesNotAutoStartWhenDisabledInManifest) {
         "openaa_manifest_autostart_false.json");
 
     std::ostringstream logs;
-    openaa::core::Logger logger(logs);
-    openaa::exec::ExecutionManager manager(logger);
+    ara::core::Logger logger(logs);
+    ara::exec::ExecutionManager manager(logger);
     manager.RegisterApplicationFactory("tests.unit.manifested", []() {
         return std::make_unique<ManifestApplication>();
     });

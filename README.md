@@ -96,13 +96,13 @@ The mapping is:
 Run the built-in execution manager demo:
 
 ```bash
-./build/Release/platform/exec/openaa_exec
+./build/Release/src/ara/exec/ara_exec_demo
 ```
 
 Or point the execution manager at a different manifest:
 
 ```bash
-./build/Release/platform/exec/openaa_exec /path/to/application_manifest.json
+./build/Release/src/ara/exec/ara_exec_demo /path/to/application_manifest.json
 ```
 
 Run the hello world adaptive application through the execution manager:

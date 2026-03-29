@@ -14,7 +14,6 @@ target_include_directories(lib_openaa_example_hello_world
 target_link_libraries(lib_openaa_example_hello_world
     PUBLIC
         ara_core
-        openaa_platform_core
 )
 
 target_compile_features(lib_openaa_example_hello_world PUBLIC cxx_std_20)
@@ -25,7 +24,7 @@ add_executable(openaa_example_hello_world_runner
 
 target_link_libraries(openaa_example_hello_world_runner
     PRIVATE
-        openaa_platform_exec
+        ara_exec
         lib_openaa_example_hello_world
 )
 

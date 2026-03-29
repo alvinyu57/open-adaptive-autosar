@@ -1,15 +1,15 @@
 #include "openaa/apps/app_manifest/app_manifest_app.hpp"
 
-#include "openaa/core/application.hpp"
+#include "ara/core/application.hpp"
 
 namespace openaa::apps::app_manifest {
 
 namespace {
 
-class AppManifestApp final : public openaa::core::Application {
+class AppManifestApp final : public ara::core::Application {
 public:
     AppManifestApp()
-        : openaa::core::Application("apps.02_app_manifest.demo") {}
+        : ara::core::Application("apps.02_app_manifest.demo") {}
 
 private:
     void OnInitialize(ara::core::RuntimeContext& context) override {

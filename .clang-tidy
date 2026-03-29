@@ -29,7 +29,7 @@ Checks: >
   -readability-magic-numbers
 
 WarningsAsErrors: '*'
-HeaderFilterRegex: '^.*/(ara|platform|examples|tests)/.*'
+HeaderFilterRegex: '^.*/(ara|apps|tests)/.*'
 FormatStyle: file
 
 CheckOptions:

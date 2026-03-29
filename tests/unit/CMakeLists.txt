@@ -10,8 +10,8 @@ set_target_properties(openaa_core_unit_test PROPERTIES
 target_link_libraries(openaa_core_unit_test
     PRIVATE
         GTest::gtest_main
-        openaa_platform_core
-        openaa_platform_exec
+        ara_core
+        ara_exec
 )
 
 target_compile_features(openaa_core_unit_test PRIVATE cxx_std_20)
