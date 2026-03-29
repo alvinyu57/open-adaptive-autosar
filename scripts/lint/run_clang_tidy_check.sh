@@ -5,8 +5,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 BUILD_DIR="${PROJECT_ROOT}/build/Release"
-BUILD_TESTS="ON"
-BUILD_APPS="ON"
+BUILD_TESTS="True"
+BUILD_APPS="True"
 OUTPUT_FILE="${BUILD_DIR}/results/clang-tidy-result.txt"
 
 usage() {
