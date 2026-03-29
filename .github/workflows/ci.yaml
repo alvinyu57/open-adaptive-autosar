@@ -55,7 +55,7 @@ jobs:
             -v "${GITHUB_WORKSPACE}:/workspace" \
             -w /workspace \
             openaa-build \
-            bash -lc "./scripts/lint/run_clang_tidy_check.sh --output ${LINT_RESULTS_DIR}/clang-tidy-result.txt" \
+            bash -lc "./scripts/lint/run_clang_tidy_check.sh --output ${LINT_RESULTS_DIR}" \
             2>&1 | tee "${LINT_RESULTS_DIR}/clang-tidy.log"
           exit "${PIPESTATUS[0]}"
 
