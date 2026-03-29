@@ -83,12 +83,12 @@ if [ ! -f "${BUILD_DIR}/compile_commands.json" ]; then
     conan install "${PROJECT_ROOT}" \
         --build=missing \
         -s build_type=${CONAN_BUILD_TYPE} \
-        -o build_apps="${BUILD_APPS}" \
-        -o build_tests="${BUILD_TESTS}"
+        -o build_apps=${BUILD_APPS} \
+        -o build_tests=${BUILD_TESTS}
 
     conan build . --output-folder=${BUILD_DIR} \
-        -o 'build_apps=${BUILD_APPS}' \
-        -o 'build_tests=${BUILD_TESTS}'
+        -o build_apps=${BUILD_APPS} \
+        -o build_tests=${BUILD_TESTS}
 
 else
     echo "Clang-tidy build directory already configured."
