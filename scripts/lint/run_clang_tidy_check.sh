@@ -83,9 +83,8 @@ if [ ! -f "${BUILD_DIR}/compile_commands.json" ]; then
         --build=missing \
         -s build_type=Debug \
         -o openaa:build_apps="${BUILD_APPS}" \
-        -o openaa:build_tests="${BUILD_TESTS}" \
-        ${CONAN_OPTIONS}
-        
+        -o openaa:build_tests="${BUILD_TESTS}"
+
     cmake -S "${PROJECT_ROOT}" -B "${BUILD_DIR}" \
         -DCMAKE_BUILD_TYPE=Debug \
         -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
