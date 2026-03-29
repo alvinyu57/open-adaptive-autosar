@@ -4,6 +4,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+CONAN_BUILD_TYPE="Release"
 BUILD_DIR="${PROJECT_ROOT}/build/Release"
 BUILD_TESTS="True"
 BUILD_APPS="True"
@@ -81,12 +82,12 @@ if [ ! -f "${BUILD_DIR}/compile_commands.json" ]; then
     conan profile detect --force && 
     conan install "${PROJECT_ROOT}" \
         --build=missing \
-        -s build_type=Debug \
+        -s build_type=${CONAN_BUILD_TYPE} \
         -o build_apps="${BUILD_APPS}" \
         -o build_tests="${BUILD_TESTS}"
 
     cmake -S "${PROJECT_ROOT}" -B "${BUILD_DIR}" \
-        -DCMAKE_BUILD_TYPE=Debug \
+        -DCMAKE_BUILD_TYPE=${CONAN_BUILD_TYPE} \
         -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
         -DOPEN_AA_BUILD_APPS=${BUILD_APPS} \
         -DOPEN_AA_BUILD_TESTS=${BUILD_TESTS}
