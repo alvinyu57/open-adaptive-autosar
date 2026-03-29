@@ -82,8 +82,8 @@ if [ ! -f "${BUILD_DIR}/compile_commands.json" ]; then
     conan install "${PROJECT_ROOT}" \
         --build=missing \
         -s build_type=Debug \
-        -o openaa:build_apps="${BUILD_APPS}" \
-        -o openaa:build_tests="${BUILD_TESTS}"
+        -o build_apps="${BUILD_APPS}" \
+        -o build_tests="${BUILD_TESTS}"
 
     cmake -S "${PROJECT_ROOT}" -B "${BUILD_DIR}" \
         -DCMAKE_BUILD_TYPE=Debug \
