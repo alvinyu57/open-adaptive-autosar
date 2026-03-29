@@ -7,37 +7,22 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 BUILD_DIR="${PROJECT_ROOT}/build/Release"
 BUILD_TESTS="True"
 BUILD_APPS="True"
-OUTPUT_FILE="${BUILD_DIR}/results/clang-tidy-result.txt"
+OUTPUT_FILE_PATH="${BUILD_DIR}/results"
 
 usage() {
     cat <<'EOF'
 Usage: ./run_clang_tidy.sh [options]
 
 Options:
-  --help                        Show this help message
-  --output <file>                 Specify output file for clang-tidy results (default: build/Release/results/clang-tidy-result.txt)
+    --help                        Show this help message
+    --output <file>                 Specify output file for clang-tidy results (default: build/Release/results/clang-tidy-result.txt)
 EOF
 }
-
-if ! command -v clang-tidy >/dev/null 2>&1; then
-    echo "clang-tidy is not installed or not available in PATH." >&2
-    exit 1
-fi
-
-if ! command -v cmake >/dev/null 2>&1; then
-    echo "cmake is not installed or not available in PATH." >&2
-    exit 1
-fi
-
-if ! command -v conan >/dev/null 2>&1; then
-    echo "conan is not installed or not available in PATH." >&2
-    exit 1
-fi
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --output)
-            OUTPUT_FILE="$2"
+            OUTPUT_FILE_PATH="$2"
             shift 2
             ;;
         --help)
@@ -94,12 +79,13 @@ if [ ! -f "${BUILD_DIR}/compile_commands.json" ]; then
     echo "Clang-tidy build directory not found. Configuring and generating compile_commands.json..."
 
     conan profile detect --force && 
-    conan install . --output-folder=build --build=missing \
-        -s build_type=Release \
-        -o shared=False \
-        -o build_apps=${BUILD_APPS} \
-        -o build_tests=${BUILD_TESTS}
-
+    conan install "${PROJECT_ROOT}" \
+        --build=missing \
+        -s build_type=Debug \
+        -o openaa:build_apps="${BUILD_APPS}" \
+        -o openaa:build_tests="${BUILD_TESTS}" \
+        ${CONAN_OPTIONS}
+        
     cmake -S "${PROJECT_ROOT}" -B "${BUILD_DIR}" \
         -DCMAKE_BUILD_TYPE=Debug \
         -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
@@ -112,6 +98,9 @@ fi
 
 echo "Running clang-tidy on ${#SOURCE_FILES[@]} file(s)..."
 cd "${PROJECT_ROOT}"
+
+mkdir -p ${OUTPUT_FILE_PATH}
+OUTPUT_FILE="${OUTPUT_FILE_PATH}/clang-tidy-result.txt"
 
 if clang-tidy -p "${BUILD_DIR}" "${SOURCE_FILES[@]}" > "${OUTPUT_FILE}" 2>&1; then
     echo "No violations found!"

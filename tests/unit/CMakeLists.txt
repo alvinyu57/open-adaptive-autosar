@@ -1,3 +1,6 @@
+find_package(GTest CONFIG REQUIRED)
+include(GoogleTest)
+
 add_executable(openaa_core_unit_test
     core_application_test.cpp
     execution_manager_manifest_test.cpp
