@@ -21,7 +21,8 @@ public:
 private:
     void OnInitialize(ara::core::RuntimeContext& context) override {
         initialized = true;
-        const bool inserted = context.Services().Register({
+        bool inserted{false};
+        inserted = context.Services().Register({
             .service_id = "tests.unit.recording.service",
             .endpoint = "local://tests-unit",
             .owner = Name(),

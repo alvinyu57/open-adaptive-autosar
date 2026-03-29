@@ -5,7 +5,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 BUILD_DIR="${PROJECT_ROOT}/build/Release"
-BUILD_TESTS="OFF"
+BUILD_TESTS="ON"
+BUILD_APPS="ON"
 OUTPUT_FILE="${BUILD_DIR}/results/clang-tidy-result.txt"
 
 usage() {
@@ -25,6 +26,11 @@ fi
 
 if ! command -v cmake >/dev/null 2>&1; then
     echo "cmake is not installed or not available in PATH." >&2
+    exit 1
+fi
+
+if ! command -v conan >/dev/null 2>&1; then
+    echo "conan is not installed or not available in PATH." >&2
     exit 1
 fi
 
@@ -89,7 +95,7 @@ if [ ! -f "${BUILD_DIR}/compile_commands.json" ]; then
     cmake -S "${PROJECT_ROOT}" -B "${BUILD_DIR}" \
         -DCMAKE_BUILD_TYPE=Debug \
         -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-        -DOPEN_AA_BUILD_APPS=ON \
+        -DOPEN_AA_BUILD_APPS=${BUILD_APPS} \
         -DOPEN_AA_BUILD_TESTS="${BUILD_TESTS}"
 else
     echo "Clang-tidy build directory already configured."
