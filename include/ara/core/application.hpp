@@ -1,8 +1,9 @@
 #pragma once
 
+#include "ara/log/logger.hpp"
+
 #include <map>
 #include <mutex>
-#include <ostream>
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -25,19 +26,6 @@ struct ServiceEntry {
     std::string owner;
 };
 
-class Logger {
-public:
-    explicit Logger(std::ostream& output);
-    virtual ~Logger() = default;
-
-    virtual void Info(std::string_view component, std::string_view message) const;
-    virtual void Warn(std::string_view component, std::string_view message) const;
-    virtual void Error(std::string_view component, std::string_view message) const;
-
-private:
-    std::ostream* output_;
-};
-
 class ServiceRegistry {
 public:
     virtual ~ServiceRegistry() = default;
@@ -52,7 +40,7 @@ private:
 
 class RuntimeContext {
 public:
-    RuntimeContext(ServiceRegistry& registry, Logger& logger)
+    RuntimeContext(ServiceRegistry& registry, ara::log::Logger& logger)
         : registry_(&registry),
           logger_(&logger) {}
 
@@ -60,13 +48,13 @@ public:
         return *registry_;
     }
 
-    Logger& Log() const {
+    ara::log::Logger& Log() const {
         return *logger_;
     }
 
 private:
     ServiceRegistry* registry_;
-    Logger* logger_;
+    ara::log::Logger* logger_;
 };
 
 class Application {

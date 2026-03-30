@@ -1,17 +1,17 @@
 add_library(ara_exec
-    src/application_manifest_loader.cpp
-    src/execution_manager.cpp
-    src/manifest_path.cpp
+    application_manifest_loader.cpp
+    execution_manager.cpp
+    manifest_path.cpp
 )
 
 target_include_directories(ara_exec
     PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${PROJECT_SOURCE_DIR}/include
 )
 
 target_include_directories(ara_exec
     PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 target_link_libraries(ara_exec
@@ -26,7 +26,7 @@ set_target_properties(ara_exec PROPERTIES
 target_compile_features(ara_exec PUBLIC cxx_std_20)
 
 add_executable(ara_exec_demo
-    src/main.cpp
+    main.cpp
 )
 
 target_link_libraries(ara_exec_demo

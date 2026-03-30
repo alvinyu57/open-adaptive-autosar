@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "ara/core/application.hpp"
+#include "ara/log/logger.hpp"
 
 namespace {
 
@@ -66,7 +67,7 @@ TEST(ServiceRegistryTest, RejectsDuplicateServiceId) {
 
 TEST(ApplicationTest, TransitionsThroughLifecycleAndInvokesHooks) {
     std::ostringstream logs;
-    ara::core::Logger logger(logs);
+    ara::log::Logger logger(logs);
     ara::core::ServiceRegistry registry;
     ara::core::RuntimeContext context(registry, logger);
     RecordingApplication application;
@@ -89,7 +90,7 @@ TEST(ApplicationTest, TransitionsThroughLifecycleAndInvokesHooks) {
 
 TEST(ApplicationTest, RejectsRunningBeforeInitialization) {
     std::ostringstream logs;
-    ara::core::Logger logger(logs);
+    ara::log::Logger logger(logs);
     ara::core::ServiceRegistry registry;
     ara::core::RuntimeContext context(registry, logger);
     RecordingApplication application;
@@ -99,7 +100,7 @@ TEST(ApplicationTest, RejectsRunningBeforeInitialization) {
 
 TEST(ApplicationTest, StopBeforeInitializationIsANoop) {
     std::ostringstream logs;
-    ara::core::Logger logger(logs);
+    ara::log::Logger logger(logs);
     ara::core::ServiceRegistry registry;
     ara::core::RuntimeContext context(registry, logger);
     RecordingApplication application;

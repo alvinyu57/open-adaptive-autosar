@@ -5,6 +5,7 @@
 #include "ara/core/application.hpp"
 #include "ara/exec/execution_manager.hpp"
 #include "ara/exec/manifest_path.hpp"
+#include "ara/log/logger.hpp"
 
 namespace {
 
@@ -35,7 +36,7 @@ private:
 } // namespace
 
 int main(int argc, char* argv[]) {
-    ara::core::Logger logger(std::cout);
+    ara::log::Logger logger(std::cout);
     ara::exec::ExecutionManager manager(logger);
 
     manager.RegisterApplicationFactory("diagnostics.stub", []() {

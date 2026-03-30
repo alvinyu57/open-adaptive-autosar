@@ -7,6 +7,7 @@
 
 #include "ara/core/application.hpp"
 #include "ara/exec/execution_manager.hpp"
+#include "ara/log/logger.hpp"
 
 namespace {
 
@@ -62,7 +63,7 @@ TEST(ExecutionManagerManifestTest, LoadsManifestAndStartsRegisteredApplication) 
         "openaa_manifest_success.json");
 
     std::ostringstream logs;
-    ara::core::Logger logger(logs);
+    ara::log::Logger logger(logs);
     ara::exec::ExecutionManager manager(logger);
     manager.RegisterApplicationFactory("tests.unit.manifested", []() {
         return std::make_unique<ManifestApplication>();
@@ -98,7 +99,7 @@ TEST(ExecutionManagerManifestTest, RejectsManifestWithoutRegisteredFactory) {
         "openaa_manifest_missing_factory.json");
 
     std::ostringstream logs;
-    ara::core::Logger logger(logs);
+    ara::log::Logger logger(logs);
     ara::exec::ExecutionManager manager(logger);
 
     EXPECT_THROW(manager.LoadApplicationManifest(manifest_path.string()), std::runtime_error);
@@ -117,7 +118,7 @@ TEST(ExecutionManagerManifestTest, DoesNotAutoStartWhenDisabledInManifest) {
         "openaa_manifest_autostart_false.json");
 
     std::ostringstream logs;
-    ara::core::Logger logger(logs);
+    ara::log::Logger logger(logs);
     ara::exec::ExecutionManager manager(logger);
     manager.RegisterApplicationFactory("tests.unit.manifested", []() {
         return std::make_unique<ManifestApplication>();

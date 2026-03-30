@@ -75,11 +75,18 @@ for extra_option in "${EXTRA_CONAN_OPTIONS[@]}"; do
     fi
 done
 
-docker build \
-    --build-arg USER_ID="$(id -u)" \
-    --build-arg GROUP_ID="$(id -g)" \
-    -f "${PROJECT_ROOT}/Dockerfile" \
-    -t openaa-build .
+# check if docker image already exists to avoid unnecessary rebuilds
+if [[ -n "$(docker images -q openaa-build:latest 2> /dev/null)" ]]; then
+    echo "Docker image 'openaa-build:latest' already exists, skipping build."
+else
+    echo "Building Docker image 'openaa-build:latest'..."
+
+    docker build \
+        --build-arg USER_ID="$(id -u)" \
+        --build-arg GROUP_ID="$(id -g)" \
+        -f "${PROJECT_ROOT}/Dockerfile" \
+        -t openaa-build .
+fi
 
 docker run --rm \
     -v "${PROJECT_ROOT}:/workspace" \

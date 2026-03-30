@@ -6,6 +6,7 @@
 
 #include "ara/core/application.hpp"
 #include "ara/exec/execution_manager.hpp"
+#include "ara/log/logger.hpp"
 
 namespace {
 
@@ -47,7 +48,7 @@ int main() {
         })";
     }
 
-    ara::core::Logger logger(std::cout);
+    ara::log::Logger logger(std::cout);
     ara::exec::ExecutionManager manager(logger);
     manager.RegisterApplicationFactory("tests.smoke", []() {
         return std::make_unique<TestApp>();

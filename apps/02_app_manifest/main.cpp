@@ -5,10 +5,11 @@
 #include "ara/core/application.hpp"
 #include "ara/exec/execution_manager.hpp"
 #include "ara/exec/manifest_path.hpp"
+#include "ara/log/logger.hpp"
 #include "openaa/apps/app_manifest/app_manifest_app.hpp"
 
 int main(int argc, char* argv[]) {
-    ara::core::Logger logger(std::cout);
+    ara::log::Logger logger(std::cout);
     ara::exec::ExecutionManager manager(logger);
 
     manager.RegisterApplicationFactory("apps.02_app_manifest.demo",

@@ -7,15 +7,14 @@ Core runtime APIs and their current in-process implementation.
 The `ara/core` package defines the smallest reusable runtime building blocks needed by adaptive applications and higher-level runtime managers:
 
 - application lifecycle contracts
-- runtime logging contracts
 - service registration contracts
 - a shared runtime context passed into applications
 
-This layer intentionally stays transport-agnostic. The current repository keeps the default lifecycle, logging, and service-registry implementation in the same package so applications only depend on `ara/core`.
+This layer intentionally stays transport-agnostic. The current repository keeps lifecycle and service-registry implementation in the same package, while logging is provided separately by `ara/log`.
 
 ## Main Building Blocks
 
-- `ara/core/application.hpp`: `Logger`, `ServiceRegistry`, `RuntimeContext`, `Application`, and supporting types
+- `include/ara/core/application.hpp`: `ServiceRegistry`, `RuntimeContext`, `Application`, and supporting types
 
 ## Software Architecture Requirements
 
@@ -44,12 +43,6 @@ This layer intentionally stays transport-agnostic. The current repository keeps 
 - `ServiceRegistry::Register()` shall report whether registration succeeded.
 - `ServiceRegistry::List()` shall return a snapshot suitable for status reporting, diagnostics, or tests.
 - `ara/core` shall not prescribe the concrete storage, synchronization, or duplicate-handling strategy beyond the observable contract.
-
-### Logging
-
-- `Logger` shall provide at least `Info`, `Warn`, and `Error` severity levels.
-- `Logger` shall accept a component identifier and message payload for each log record.
-- `ara/core` shall not require a specific timestamp format, sink, or buffering strategy.
 
 ### Quality attributes
 

@@ -4,13 +4,13 @@ Execution-management APIs and their current in-process implementation.
 
 ## Responsibilities
 
-The `ara/exec` package defines orchestration-facing types built on top of `ara/core` and also contains the repository's current execution-manager implementation.
+The `ara/exec` package defines orchestration-facing types built on top of `ara/core` and `ara/log` and also contains the repository's current execution-manager implementation.
 
 ## Main Building Blocks
 
-- `ara/exec/execution_manager.hpp`: `ExecutionManager` for lifecycle orchestration of adaptive applications
-- `ara/exec/application_manifest.hpp`: manifest data model for Adaptive AUTOSAR-style application startup metadata
-- `ara/exec/manifest_path.hpp`: helper for locating co-deployed manifests beside executables
+- `include/ara/exec/execution_manager.hpp`: `ExecutionManager` for lifecycle orchestration of adaptive applications
+- `include/ara/exec/application_manifest.hpp`: manifest data model for Adaptive AUTOSAR-style application startup metadata
+- `include/ara/exec/manifest_path.hpp`: helper for locating co-deployed manifests beside executables
 
 ## Software Architecture Requirements
 

@@ -8,7 +8,8 @@ The `src/ara` tree is now the single home for the repository's Adaptive AUTOSAR 
 
 In the current MVP, it contains:
 
-- `ara/core`: lifecycle, logging, runtime context, and service registry support
+- `ara/log`: logging contracts and the default stream-based logger
+- `ara/core`: lifecycle, runtime context, and service registry support
 - `ara/exec`: execution management, manifest loading, and demo runner support
 
 ## Design Intent

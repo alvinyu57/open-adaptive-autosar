@@ -8,7 +8,7 @@
 
 namespace ara::exec {
 
-ExecutionManager::ExecutionManager(ara::core::Logger& logger)
+ExecutionManager::ExecutionManager(ara::log::Logger& logger)
     : logger_(&logger) {}
 
 void ExecutionManager::AddApplication(std::unique_ptr<ara::core::Application> application) {

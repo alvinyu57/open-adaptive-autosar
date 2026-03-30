@@ -1,14 +1,19 @@
 add_library(ara_core
-    src/application.cpp
+    application.cpp
 )
 
 target_include_directories(ara_core
     PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${PROJECT_SOURCE_DIR}/include
 )
 
 set_target_properties(ara_core PROPERTIES
     PREFIX ""
+)
+
+target_link_libraries(ara_core
+    PUBLIC
+        ara_log
 )
 
 target_compile_features(ara_core PUBLIC cxx_std_20)

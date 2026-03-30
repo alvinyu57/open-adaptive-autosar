@@ -8,12 +8,13 @@
 
 #include "ara/core/application.hpp"
 #include "ara/exec/application_manifest.hpp"
+#include "ara/log/logger.hpp"
 
 namespace ara::exec {
 
 class ExecutionManager {
 public:
-    explicit ExecutionManager(ara::core::Logger& logger);
+    explicit ExecutionManager(ara::log::Logger& logger);
     virtual ~ExecutionManager() = default;
 
     virtual void AddApplication(std::unique_ptr<ara::core::Application> application);
@@ -33,7 +34,7 @@ private:
         std::unique_ptr<ara::core::Application> application;
     };
 
-    ara::core::Logger* logger_;
+    ara::log::Logger* logger_;
     ara::core::ServiceRegistry registry_;
     std::unordered_map<std::string, ara::core::ApplicationFactory> application_factories_;
     std::vector<ManagedApplication> applications_;
