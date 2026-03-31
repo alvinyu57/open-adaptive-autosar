@@ -1,16 +1,18 @@
 # `ara/exec`
 
-Execution-management APIs and their current in-process implementation.
+AUTOSAR Adaptive `ara::exec` API surface and a small in-process runtime stub for development.
 
 ## Responsibilities
 
-The `ara/exec` package defines orchestration-facing types built on top of `ara/core` and `ara/log` and also contains the repository's current execution-manager implementation.
+The `ara/exec` package defines execution-management-facing types built on top of `ara/core`.
 
 ## Main Building Blocks
 
-- `include/ara/exec/execution_manager.hpp`: `ExecutionManager` for lifecycle orchestration of adaptive applications
-- `include/ara/exec/application_manifest.hpp`: manifest data model for Adaptive AUTOSAR-style application startup metadata
-- `include/ara/exec/manifest_path.hpp`: helper for locating co-deployed manifests beside executables
+- `include/ara/exec/exec_error_domain.h`: error domain and error codes defined for execution management
+- `include/ara/exec/execution_client.h`: process-facing execution state reporting API
+- `include/ara/exec/function_group.h`: function-group identifier type
+- `include/ara/exec/function_group_state.h`: function-group state identifier type
+- `include/ara/exec/state_client.h`: function-group state transition API
 
 ## Software Architecture Requirements
 
@@ -19,34 +21,24 @@ The `ara/exec` package defines orchestration-facing types built on top of `ara/c
 - `ara/exec` shall consume the standardized contracts from `ara/core`.
 - `ara/exec` shall remain independent from middleware transport implementation details so it can orchestrate different application types uniformly.
 
-### Application registration and ownership
+### Execution state reporting
 
-- `ExecutionManager` shall accept ownership of applications through `std::unique_ptr<ara::exec::Application>`.
-- `ExecutionManager::AddApplication()` shall allow runtimes to register application instances before startup.
-- `ExecutionManager::RegisterApplicationFactory()` shall allow manifest-driven runtimes to bind application identifiers to concrete application factories.
-- `ExecutionManager::LoadApplicationManifest()` shall allow runtimes to load application startup metadata before execution begins.
+- `ExecutionClient` shall provide process-facing reporting of `ExecutionState`.
+- `ExecutionClient::Create()` shall validate construction-time prerequisites and report failures through `ara::core::Result`.
 
-### Startup behavior
+### Function-group transitions
 
-- `ExecutionManager::Start()` shall expose an explicit entry point for beginning managed application execution.
-- `ara/exec` shall not prescribe startup ordering, logging detail, or context construction beyond what is visible through the interface contract.
-
-### Shutdown behavior
-
-- `ExecutionManager::Stop()` shall expose an explicit entry point for stopping managed application execution.
-- `ara/exec` shall not prescribe shutdown ordering, rollback behavior, or supervision policy beyond what is visible through the interface contract.
-
-### Shared runtime data
-
-- `ExecutionManager::Services()` shall expose read-only access to a service registry view suitable for diagnostics and tests.
-- `ara/exec` shall not require a particular ownership model for the underlying registry implementation.
+- `FunctionGroup` and `FunctionGroupState` shall model AUTOSAR execution-management state identifiers.
+- `StateClient::SetState()` shall return an asynchronous result object.
+- `StateClient::GetExecutionError()` shall expose the last unexpected termination state for an undefined function-group state when available.
 
 ### Quality attributes and evolution
 
-- The module should remain a thin orchestration layer on top of `ara/core`.
-- The module should be testable with lightweight unit and smoke coverage using stub applications.
-- Future evolution of `ara/exec` may add richer execution-management contracts, but those additions should preserve a clear separation from platform-specific policy.
+- The module should remain a thin standards-oriented layer on top of `ara/core`.
+- The module should be testable with lightweight unit and smoke coverage using stub runtime state.
+- Future evolution of `ara/exec` may enrich the process interaction with a real platform execution manager while preserving the AUTOSAR API surface.
 
 ## Current Limitations
 
-- Restart policy, health supervision, and process isolation are not yet represented in the interface layer.
+- The current implementation is an in-process stub and does not communicate with a platform execution manager daemon.
+- Function-group transitions complete immediately and are intended only for development and CI validation.

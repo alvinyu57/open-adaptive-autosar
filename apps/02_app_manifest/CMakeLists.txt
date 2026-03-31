@@ -1,23 +1,3 @@
-add_library(openaa_app_manifest_lib
-    src/app_manifest_app.cpp
-)
-
-set_target_properties(openaa_app_manifest_lib PROPERTIES
-    PREFIX ""
-)
-
-target_include_directories(openaa_app_manifest_lib
-    PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-)
-
-target_link_libraries(openaa_app_manifest_lib
-    PUBLIC
-        ara_core
-)
-
-target_compile_features(openaa_app_manifest_lib PUBLIC cxx_std_20)
-
 add_executable(openaa_app_manifest_demo
     main.cpp
 )
@@ -28,8 +8,7 @@ set_target_properties(openaa_app_manifest_demo PROPERTIES
 
 target_link_libraries(openaa_app_manifest_demo
     PRIVATE
-        ara_exec
-        openaa_app_manifest_lib
+        libara_exec
 )
 
 configure_file(
