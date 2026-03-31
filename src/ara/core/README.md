@@ -14,7 +14,7 @@ This layer intentionally stays transport-agnostic. The current repository keeps 
 
 ## Main Building Blocks
 
-- `include/ara/core/application.hpp`: `ServiceRegistry`, `RuntimeContext`, `Application`, and supporting types
+- `include/ara/core/initialization.h`: framework initialization and de-initialization entry points
 
 ## Software Architecture Requirements
 

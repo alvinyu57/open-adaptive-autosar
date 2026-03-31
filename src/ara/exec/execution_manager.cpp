@@ -11,7 +11,7 @@ namespace ara::exec {
 ExecutionManager::ExecutionManager(ara::log::Logger& logger)
     : logger_(&logger) {}
 
-void ExecutionManager::AddApplication(std::unique_ptr<ara::core::Application> application) {
+void ExecutionManager::AddApplication(std::unique_ptr<ara::exec::Application> application) {
     logger_->Info("exec", "Register application: " + application->Name());
     applications_.push_back({
         .manifest =
@@ -26,7 +26,7 @@ void ExecutionManager::AddApplication(std::unique_ptr<ara::core::Application> ap
 
 void ExecutionManager::RegisterApplicationFactory(
     std::string application_id,
-    ara::core::ApplicationFactory factory) {
+    ara::exec::ApplicationFactory factory) {
     if (application_id.empty()) {
         throw std::invalid_argument("application factory id must not be empty");
     }
@@ -67,7 +67,7 @@ void ExecutionManager::LoadApplicationManifest(const std::string& manifest_path)
 }
 
 void ExecutionManager::Start() {
-    ara::core::RuntimeContext context(registry_, *logger_);
+    ara::exec::RuntimeContext context(registry_, *logger_);
     logger_->Info("exec", "Execution manager start");
 
     for (auto& managed_application : applications_) {
@@ -92,7 +92,7 @@ void ExecutionManager::Start() {
 }
 
 void ExecutionManager::Stop() {
-    ara::core::RuntimeContext context(registry_, *logger_);
+    ara::exec::RuntimeContext context(registry_, *logger_);
 
     for (auto it = applications_.rbegin(); it != applications_.rend(); ++it) {
         logger_->Info("exec", "Stop " + it->application->Name());
@@ -102,7 +102,7 @@ void ExecutionManager::Stop() {
     logger_->Info("exec", "Execution manager stopped");
 }
 
-const ara::core::ServiceRegistry& ExecutionManager::Services() const {
+const ara::exec::ServiceRegistry& ExecutionManager::Services() const {
     return registry_;
 }
 

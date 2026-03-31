@@ -5,19 +5,19 @@
 
 #include <gtest/gtest.h>
 
-#include "ara/core/application.hpp"
+#include "ara/exec/application.hpp"
 #include "ara/exec/execution_manager.hpp"
 #include "ara/log/logger.hpp"
 
 namespace {
 
-class ManifestApplication final : public ara::core::Application {
+class ManifestApplication final : public ara::exec::Application {
 public:
     ManifestApplication()
-        : ara::core::Application("tests.unit.manifested") {}
+        : ara::exec::Application("tests.unit.manifested") {}
 
 private:
-    void OnInitialize(ara::core::RuntimeContext& context) override {
+    void OnInitialize(ara::exec::RuntimeContext& context) override {
         const bool inserted = context.Services().Register({
             .service_id = "tests.unit.manifested.service",
             .endpoint = "local://manifested",
@@ -29,9 +29,9 @@ private:
         }
     }
 
-    void OnStart(ara::core::RuntimeContext&) override {}
+    void OnStart(ara::exec::RuntimeContext&) override {}
 
-    void OnStop(ara::core::RuntimeContext&) override {}
+    void OnStop(ara::exec::RuntimeContext&) override {}
 };
 
 std::filesystem::path WriteManifestFile(std::string_view contents, std::string_view name) {

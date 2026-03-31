@@ -1,5 +1,7 @@
 add_library(ara_core
-    application.cpp
+    abort.cpp
+    core_error_domain.cpp
+    initialization.cpp
 )
 
 target_include_directories(ara_core

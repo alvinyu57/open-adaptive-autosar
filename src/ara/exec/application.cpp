@@ -1,9 +1,9 @@
-#include "ara/core/application.hpp"
+#include "ara/exec/application.hpp"
 
 #include <stdexcept>
 #include <utility>
 
-namespace ara::core {
+namespace ara::exec {
 
 bool ServiceRegistry::Register(ServiceEntry entry) {
     std::scoped_lock lock(mutex_);
@@ -62,4 +62,4 @@ ApplicationState Application::State() const {
     return state_;
 }
 
-} // namespace ara::core
+} // namespace ara::exec

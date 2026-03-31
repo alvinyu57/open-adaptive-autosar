@@ -2,10 +2,10 @@
 
 #include <memory>
 
-#include "ara/core/application.hpp"
+#include "ara/exec/application.hpp"
 
 namespace openaa::examples::hello_world {
 
-std::unique_ptr<ara::core::Application> CreateHelloWorldApp();
+std::unique_ptr<ara::exec::Application> CreateHelloWorldApp();
 
 } // namespace openaa::examples::hello_world

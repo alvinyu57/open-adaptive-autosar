@@ -1,4 +1,5 @@
 add_library(ara_exec
+    application.cpp
     application_manifest_loader.cpp
     execution_manager.cpp
     manifest_path.cpp

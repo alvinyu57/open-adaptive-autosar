@@ -2,20 +2,21 @@
 #include <iostream>
 #include <memory>
 
-#include "ara/core/application.hpp"
+#include "ara/core/initialization.h"
+#include "ara/exec/application.hpp"
 #include "ara/exec/execution_manager.hpp"
 #include "ara/exec/manifest_path.hpp"
 #include "ara/log/logger.hpp"
 
 namespace {
 
-class DiagnosticsApp final : public ara::core::Application {
+class DiagnosticsApp final : public ara::exec::Application {
 public:
     DiagnosticsApp()
-        : ara::core::Application("diagnostics.stub") {}
+        : ara::exec::Application("diagnostics.stub") {}
 
 private:
-    void OnInitialize(ara::core::RuntimeContext& context) override {
+    void OnInitialize(ara::exec::RuntimeContext& context) override {
         context.Log().Info(Name(), "Initialize diagnostics service");
         context.Services().Register({
             .service_id = "ara.exec.diagnostics",
@@ -24,11 +25,11 @@ private:
         });
     }
 
-    void OnStart(ara::core::RuntimeContext& context) override {
+    void OnStart(ara::exec::RuntimeContext& context) override {
         context.Log().Info(Name(), "Diagnostics service ready");
     }
 
-    void OnStop(ara::core::RuntimeContext& context) override {
+    void OnStop(ara::exec::RuntimeContext& context) override {
         context.Log().Info(Name(), "Diagnostics service stopped");
     }
 };
@@ -36,6 +37,11 @@ private:
 } // namespace
 
 int main(int argc, char* argv[]) {
+    const auto init_result = ara::core::Initialize(argc, argv);
+    if (!init_result.HasValue()) {
+        return 1;
+    }
+
     ara::log::Logger logger(std::cout);
     ara::exec::ExecutionManager manager(logger);
 
@@ -51,5 +57,6 @@ int main(int argc, char* argv[]) {
     manager.Start();
     manager.Stop();
 
-    return 0;
+    const auto deinit_result = ara::core::Deinitialize();
+    return deinit_result.HasValue() ? 0 : 1;
 }

@@ -2,13 +2,17 @@
 #include <iostream>
 #include <sstream>
 
-#include "ara/core/application.hpp"
+#include "ara/core/initialization.h"
 #include "ara/exec/execution_manager.hpp"
 #include "ara/exec/manifest_path.hpp"
 #include "ara/log/logger.hpp"
 #include "openaa/apps/app_manifest/app_manifest_app.hpp"
 
 int main(int argc, char* argv[]) {
+    if (!ara::core::Initialize(argc, argv).HasValue()) {
+        return 1;
+    }
+
     ara::log::Logger logger(std::cout);
     ara::exec::ExecutionManager manager(logger);
 
@@ -30,5 +34,5 @@ int main(int argc, char* argv[]) {
     }
 
     manager.Stop();
-    return 0;
+    return ara::core::Deinitialize().HasValue() ? 0 : 1;
 }

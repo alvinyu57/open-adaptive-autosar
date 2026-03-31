@@ -21,7 +21,7 @@ The `ara/exec` package defines orchestration-facing types built on top of `ara/c
 
 ### Application registration and ownership
 
-- `ExecutionManager` shall accept ownership of applications through `std::unique_ptr<ara::core::Application>`.
+- `ExecutionManager` shall accept ownership of applications through `std::unique_ptr<ara::exec::Application>`.
 - `ExecutionManager::AddApplication()` shall allow runtimes to register application instances before startup.
 - `ExecutionManager::RegisterApplicationFactory()` shall allow manifest-driven runtimes to bind application identifiers to concrete application factories.
 - `ExecutionManager::LoadApplicationManifest()` shall allow runtimes to load application startup metadata before execution begins.

@@ -4,15 +4,15 @@
 
 #include <gtest/gtest.h>
 
-#include "ara/core/application.hpp"
+#include "ara/exec/application.hpp"
 #include "ara/log/logger.hpp"
 
 namespace {
 
-class RecordingApplication final : public ara::core::Application {
+class RecordingApplication final : public ara::exec::Application {
 public:
     RecordingApplication()
-        : ara::core::Application("tests.unit.recording") {}
+        : ara::exec::Application("tests.unit.recording") {}
 
     bool initialized{false};
     bool started{false};
@@ -20,7 +20,7 @@ public:
     std::size_t registered_services{0U};
 
 private:
-    void OnInitialize(ara::core::RuntimeContext& context) override {
+    void OnInitialize(ara::exec::RuntimeContext& context) override {
         initialized = true;
         bool inserted{false};
         inserted = context.Services().Register({
@@ -36,17 +36,17 @@ private:
         registered_services = context.Services().List().size();
     }
 
-    void OnStart(ara::core::RuntimeContext&) override {
+    void OnStart(ara::exec::RuntimeContext&) override {
         started = true;
     }
 
-    void OnStop(ara::core::RuntimeContext&) override {
+    void OnStop(ara::exec::RuntimeContext&) override {
         stopped = true;
     }
 };
 
 TEST(ServiceRegistryTest, RejectsDuplicateServiceId) {
-    ara::core::ServiceRegistry registry;
+    ara::exec::ServiceRegistry registry;
 
     EXPECT_TRUE(registry.Register({
         .service_id = "svc.alpha",
@@ -68,31 +68,31 @@ TEST(ServiceRegistryTest, RejectsDuplicateServiceId) {
 TEST(ApplicationTest, TransitionsThroughLifecycleAndInvokesHooks) {
     std::ostringstream logs;
     ara::log::Logger logger(logs);
-    ara::core::ServiceRegistry registry;
-    ara::core::RuntimeContext context(registry, logger);
+    ara::exec::ServiceRegistry registry;
+    ara::exec::RuntimeContext context(registry, logger);
     RecordingApplication application;
 
-    EXPECT_EQ(application.State(), ara::core::ApplicationState::kCreated);
+    EXPECT_EQ(application.State(), ara::exec::ApplicationState::kCreated);
 
     application.Initialize(context);
     EXPECT_TRUE(application.initialized);
     EXPECT_EQ(application.registered_services, 1U);
-    EXPECT_EQ(application.State(), ara::core::ApplicationState::kInitialized);
+    EXPECT_EQ(application.State(), ara::exec::ApplicationState::kInitialized);
 
     application.Run(context);
     EXPECT_TRUE(application.started);
-    EXPECT_EQ(application.State(), ara::core::ApplicationState::kRunning);
+    EXPECT_EQ(application.State(), ara::exec::ApplicationState::kRunning);
 
     application.Stop(context);
     EXPECT_TRUE(application.stopped);
-    EXPECT_EQ(application.State(), ara::core::ApplicationState::kStopped);
+    EXPECT_EQ(application.State(), ara::exec::ApplicationState::kStopped);
 }
 
 TEST(ApplicationTest, RejectsRunningBeforeInitialization) {
     std::ostringstream logs;
     ara::log::Logger logger(logs);
-    ara::core::ServiceRegistry registry;
-    ara::core::RuntimeContext context(registry, logger);
+    ara::exec::ServiceRegistry registry;
+    ara::exec::RuntimeContext context(registry, logger);
     RecordingApplication application;
 
     EXPECT_THROW(application.Run(context), std::logic_error);
@@ -101,14 +101,14 @@ TEST(ApplicationTest, RejectsRunningBeforeInitialization) {
 TEST(ApplicationTest, StopBeforeInitializationIsANoop) {
     std::ostringstream logs;
     ara::log::Logger logger(logs);
-    ara::core::ServiceRegistry registry;
-    ara::core::RuntimeContext context(registry, logger);
+    ara::exec::ServiceRegistry registry;
+    ara::exec::RuntimeContext context(registry, logger);
     RecordingApplication application;
 
     application.Stop(context);
 
     EXPECT_FALSE(application.stopped);
-    EXPECT_EQ(application.State(), ara::core::ApplicationState::kCreated);
+    EXPECT_EQ(application.State(), ara::exec::ApplicationState::kCreated);
 }
 
 } // namespace

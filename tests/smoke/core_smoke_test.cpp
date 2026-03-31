@@ -4,19 +4,20 @@
 #include <memory>
 #include <stdexcept>
 
-#include "ara/core/application.hpp"
+#include "ara/core/initialization.h"
+#include "ara/exec/application.hpp"
 #include "ara/exec/execution_manager.hpp"
 #include "ara/log/logger.hpp"
 
 namespace {
 
-class TestApp final : public ara::core::Application {
+class TestApp final : public ara::exec::Application {
 public:
     TestApp()
-        : ara::core::Application("tests.smoke") {}
+        : ara::exec::Application("tests.smoke") {}
 
 private:
-    void OnInitialize(ara::core::RuntimeContext& context) override {
+    void OnInitialize(ara::exec::RuntimeContext& context) override {
         const bool inserted = context.Services().Register({
             .service_id = "tests.smoke.service",
             .endpoint = "local://tests-smoke",
@@ -28,14 +29,18 @@ private:
         }
     }
 
-    void OnStart(ara::core::RuntimeContext&) override {}
+    void OnStart(ara::exec::RuntimeContext&) override {}
 
-    void OnStop(ara::core::RuntimeContext&) override {}
+    void OnStop(ara::exec::RuntimeContext&) override {}
 };
 
 } // namespace
 
 int main() {
+    if (!ara::core::Initialize().HasValue()) {
+        return 1;
+    }
+
     const auto manifest_path =
         std::filesystem::temp_directory_path() / "openaa_core_smoke_manifest.json";
     {
@@ -64,6 +69,9 @@ int main() {
     }
 
     manager.Stop();
+    if (!ara::core::Deinitialize().HasValue()) {
+        return 1;
+    }
     std::filesystem::remove(manifest_path);
     return 0;
 }
