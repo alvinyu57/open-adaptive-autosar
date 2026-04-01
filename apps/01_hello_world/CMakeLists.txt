@@ -2,13 +2,18 @@ add_executable(openaa_example_hello_world_runner
     main.cpp
 )
 
-target_link_libraries(openaa_example_hello_world_runner
-    PRIVATE
-        libara_exec
+set_target_properties(openaa_example_hello_world_runner PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${OPEN_AA_APP_OUTPUT_DIRECTORY}/01_hello_world"
 )
 
-configure_file(
-    manifests/hello_world.json
-    ${CMAKE_CURRENT_BINARY_DIR}/manifests/hello_world.json
-    COPYONLY
+target_include_directories(openaa_example_hello_world_runner
+    PUBLIC
+        ${PROJECT_SOURCE_DIR}/include
 )
+
+target_link_libraries(openaa_example_hello_world_runner
+    PRIVATE
+        ara_exec_lib
+)
+
+target_compile_features(openaa_example_hello_world_runner PRIVATE cxx_std_20)

@@ -1,4 +1,4 @@
-add_library(ara_log_lib
+add_library(ara_log_lib SHARED
     logger.cpp
 )
 

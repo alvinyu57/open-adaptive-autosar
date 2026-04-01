@@ -13,8 +13,23 @@ if [ ! -x "${TEST_BINARY}" ]; then
 fi
 
 if [ ! -x "${TEST_BINARY}" ]; then
-    echo "core smoke test binary still not found after build: ${TEST_BINARY}" >&2
+    echo "core smoke test binary still not found after build: ${TEST_BINARY}" >&1
     exit 1
 fi
 
-"${TEST_BINARY}"
+echo "--------------------------------------------------------"
+echo "Running Core Smoke Test..."
+echo "Binary: ${TEST_BINARY}"
+echo "--------------------------------------------------------"
+
+if "${TEST_BINARY}"; then
+    echo "--------------------------------------------------------"
+    echo "SUCCESS: Core Smoke Test completed successfully."
+    echo "--------------------------------------------------------"
+else
+    EXIT_CODE=$?
+    echo "--------------------------------------------------------"
+    echo "FAILURE: Core Smoke Test failed with exit code ${EXIT_CODE}."
+    echo "--------------------------------------------------------"
+    exit ${EXIT_CODE}
+fi

@@ -1,4 +1,4 @@
-add_library(ara_core_lib
+add_library(ara_core_lib SHARED
     abort.cpp
     core_error_domain.cpp
     initialization.cpp
