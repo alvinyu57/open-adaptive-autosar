@@ -32,7 +32,7 @@ target_compile_features(ara_exec_lib PUBLIC cxx_std_20)
 # Links against ara_exec_lib and ara_log_lib; not consumed by anything else.
 # ---------------------------------------------------------------------------
 add_executable(ara_exec
-    main.cpp
+    main_exec.cpp
 )
 
 target_include_directories(ara_exec

@@ -1,0 +1,29 @@
+{
+  "machine": {
+    "shortName": "WSL_VM_Machine",
+    "functionGroups": [
+      {
+        "name": "MachineState",
+        "states": ["Startup", "Running", "Restart", "Shutdown"],
+        "initialState": "Startup"
+      }
+    ],
+    "networkInterfaces": [
+      {
+        "name": "Eth0Connector",
+        "type": "Ethernet",
+        "endpoints": [
+          {
+            "name": "Eth0Endpoint",
+            "address": "192.168.0.100",
+            "netmask": "255.255.255.0"
+          }
+        ]
+      }
+    ],
+    "os": {
+      "name": "Ubuntu",
+      "version": "22.04"
+    }
+  }
+}

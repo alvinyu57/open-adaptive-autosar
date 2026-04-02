@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<AUTOSAR xmlns="http://autosar.org/schema/r25" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://autosar.org/schema/r25 AUTOSAR_00051.xsd">
+  <AR-PACKAGES>
+    <AR-PACKAGE>
+      <SHORT-NAME>MachineManifest</SHORT-NAME>
+      <ELEMENTS>
+        <MACHINE>
+          <SHORT-NAME>WSL_VM_Machine</SHORT-NAME>
+          <MACHINE-DESIGN-REF DEST="MACHINE-DESIGN">/MachineDesign/WSL_VM_Design</MACHINE-DESIGN-REF>
+          <MODULE-INSTANTIATIONS>
+            <OS-MODULE-INSTANTIATION>
+              <SHORT-NAME>Ubuntu_OS</SHORT-NAME>
+              <RESOURCE-GROUPS>
+                <RESOURCE-GROUP>
+                  <SHORT-NAME>DefaultGroup</SHORT-NAME>
+                </RESOURCE-GROUP>
+              </RESOURCE-GROUPS>
+            </OS-MODULE-INSTANTIATION>
+          </MODULE-INSTANTIATIONS>
+          <PROCESSORS>
+            <PROCESSOR>
+              <SHORT-NAME>CPU0</SHORT-NAME>
+              <CORES>
+                <CORE>
+                  <SHORT-NAME>Core0</SHORT-NAME>
+                  <CORE-ID>0</CORE-ID>
+                </CORE>
+              </CORES>
+            </PROCESSOR>
+          </PROCESSORS>
+          <FUNCTION-GROUPS>
+            <MODE-DECLARATION-GROUP-PROTOTYPE>
+              <SHORT-NAME>MachineState</SHORT-NAME>
+              <TYPE-TREF DEST="MODE-DECLARATION-GROUP">/MachineManifest/MachineStates</TYPE-TREF>
+            </MODE-DECLARATION-GROUP-PROTOTYPE>
+          </FUNCTION-GROUPS>
+          <COMMUNICATION-CONNECTORS>
+            <ETHERNET-COMMUNICATION-CONNECTOR>
+              <SHORT-NAME>Eth0Connector</SHORT-NAME>
+              <UNICAST-NETWORK-ENDPOINT>
+                <SHORT-NAME>Eth0Endpoint</SHORT-NAME>
+                <NETWORK-ENDPOINT-ADDRESSES>
+                  <IPV-4-CONFIGURATION>
+                    <IPV-4-ADDRESS>192.168.0.100</IPV-4-ADDRESS>
+                    <IPV-4-NETMASK>255.255.255.0</IPV-4-NETMASK>
+                  </IPV-4-CONFIGURATION>
+                </NETWORK-ENDPOINT-ADDRESSES>
+              </UNICAST-NETWORK-ENDPOINT>
+            </ETHERNET-COMMUNICATION-CONNECTOR>
+          </COMMUNICATION-CONNECTORS>
+        </MACHINE>
+        <MODE-DECLARATION-GROUP>
+          <SHORT-NAME>MachineStates</SHORT-NAME>
+          <INITIAL-MODE-REF DEST="MODE-DECLARATION">/MachineManifest/MachineStates/Startup</INITIAL-MODE-REF>
+          <MODE-DECLARATIONS>
+            <MODE-DECLARATION>
+              <SHORT-NAME>Startup</SHORT-NAME>
+            </MODE-DECLARATION>
+            <MODE-DECLARATION>
+              <SHORT-NAME>Running</SHORT-NAME>
+            </MODE-DECLARATION>
+            <MODE-DECLARATION>
+              <SHORT-NAME>Restart</SHORT-NAME>
+            </MODE-DECLARATION>
+            <MODE-DECLARATION>
+              <SHORT-NAME>Shutdown</SHORT-NAME>
+            </MODE-DECLARATION>
+          </MODE-DECLARATIONS>
+        </MODE-DECLARATION-GROUP>
+      </ELEMENTS>
+    </AR-PACKAGE>
+  </AR-PACKAGES>
+</AUTOSAR>

@@ -21,6 +21,10 @@ option(OPEN_AA_BUILD_TESTS "Build test targets" OFF)
 
 add_subdirectory(src)
 
+# Copy manifests to build directory for EM to load
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/src/manifests/ 
+     DESTINATION ${CMAKE_BINARY_DIR}/manifests)
+
 if(OPEN_AA_BUILD_APPS)
     add_subdirectory(apps)
 endif()
