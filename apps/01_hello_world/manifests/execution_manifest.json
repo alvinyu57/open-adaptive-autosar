@@ -1,0 +1,26 @@
+{
+  "executionManifest": {
+    "process": {
+      "shortName": "HelloWorldProcess",
+      "executable": "openaa_example_hello_world_runner",
+      "reportingBehavior": "reportsExecutionState",
+      "arguments": [],
+      "environmentVariables": [],
+      "stateDependentStartupConfigs": [
+        {
+          "functionGroupStates": [
+            {
+              "functionGroup": "MachineFG",
+              "state": "Startup"
+            }
+          ],
+          "startupConfig": {
+            "arguments": [],
+            "environmentVariables": [],
+            "terminationBehavior": "processIsSelfTerminating"
+          }
+        }
+      ]
+    }
+  }
+}

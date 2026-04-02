@@ -1,11 +1,10 @@
+#include <atomic>
+#include <chrono>
 #include <iostream>
+#include <thread>
 
 #include "ara/core/initialization.h"
-#include "ara/core/instance_specifier.h"
 #include "ara/exec/execution_client.h"
-#include "ara/exec/function_group.h"
-#include "ara/exec/function_group_state.h"
-#include "ara/exec/state_client.h"
 #include "ara/log/logger.hpp"
 
 int main(int argc, char* argv[]) {
@@ -14,8 +13,10 @@ int main(int argc, char* argv[]) {
     }
 
     ara::log::Logger logger(std::cout);
-    auto execution_client = ara::exec::ExecutionClient::Create([&logger]() {
+    std::atomic<bool> keep_running{true};
+    auto execution_client = ara::exec::ExecutionClient::Create([&keep_running, &logger]() {
         logger.Warn("hello_world", "Received SIGTERM");
+        keep_running.store(false);
     });
     if (!execution_client.HasValue()) {
         return 1;
@@ -26,24 +27,16 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    auto state_client = ara::exec::StateClient::Create([&logger](
-                                                            const ara::exec::ExecutionErrorEvent&
-                                                                event) {
-        logger.Error(
-            "hello_world",
-            "Undefined state callback for function group " +
-                std::string(event.functionGroup.GetInstanceSpecifier().View()));
-    });
-    if (!state_client.HasValue()) {
-        return 1;
+    logger.Info("hello_world",
+                "Adaptive AUTOSAR hello-world process is running under Execution Management");
+
+    auto managed_execution_client = std::move(execution_client.Value());
+    (void)managed_execution_client;
+
+    for (int i = 0; i < 5; ++i) {
+        std::this_thread::sleep_for(std::chrono::seconds(2));
+        logger.Info("hello_world", "Running ...");
     }
-
-    ara::exec::FunctionGroup machine_fg(ara::core::InstanceSpecifier("MachineFG"));
-    auto transition = state_client.Value().SetState(
-        ara::exec::FunctionGroupState(machine_fg, "Startup"));
-    transition.get();
-
-    logger.Info("hello_world", "Adaptive AUTOSAR hello-world process is running");
 
     return ara::core::Deinitialize().HasValue() ? 0 : 1;
 }

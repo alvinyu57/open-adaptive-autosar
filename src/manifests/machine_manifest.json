@@ -3,9 +3,22 @@
     "shortName": "WSL_VM_Machine",
     "functionGroups": [
       {
-        "name": "MachineState",
+        "name": "MachineFG",
         "states": ["Startup", "Running", "Restart", "Shutdown"],
         "initialState": "Startup"
+      }
+    ],
+    "processes": [
+      {
+        "name": "HelloWorldProcess",
+        "executablePath": "apps/01_hello_world/openaa_example_hello_world_runner",
+        "executionManifest": "apps/01_hello_world/manifests/execution_manifest.json",
+        "startupConfigs": [
+          {
+            "functionGroup": "MachineFG",
+            "state": "Startup"
+          }
+        ]
       }
     ],
     "networkInterfaces": [

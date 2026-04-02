@@ -30,10 +30,16 @@
           </PROCESSORS>
           <FUNCTION-GROUPS>
             <MODE-DECLARATION-GROUP-PROTOTYPE>
-              <SHORT-NAME>MachineState</SHORT-NAME>
+              <SHORT-NAME>MachineFG</SHORT-NAME>
               <TYPE-TREF DEST="MODE-DECLARATION-GROUP">/MachineManifest/MachineStates</TYPE-TREF>
             </MODE-DECLARATION-GROUP-PROTOTYPE>
           </FUNCTION-GROUPS>
+          <PROCESSES>
+            <PROCESS>
+              <SHORT-NAME>HelloWorldProcess</SHORT-NAME>
+              <EXECUTABLE-REF DEST="EXECUTABLE">/HelloWorldExecutionManifest/HelloWorldProcessExecutable</EXECUTABLE-REF>
+            </PROCESS>
+          </PROCESSES>
           <COMMUNICATION-CONNECTORS>
             <ETHERNET-COMMUNICATION-CONNECTOR>
               <SHORT-NAME>Eth0Connector</SHORT-NAME>
