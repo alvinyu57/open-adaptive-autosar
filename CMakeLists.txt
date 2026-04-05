@@ -19,11 +19,62 @@ option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 option(OPEN_AA_BUILD_APPS "Build applications" OFF)
 option(OPEN_AA_BUILD_TESTS "Build test targets" OFF)
 
+find_package(Python3 REQUIRED)
+
+add_custom_target(process_platform_manifests ALL
+    COMMAND echo "Processing ARXML manifests..."
+)
+
+add_custom_command(
+    TARGET  process_platform_manifests PRE_BUILD
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/scripts/manifests/verify_arxml.py
+            ${CMAKE_SOURCE_DIR}/src/manifests/machine_manifest.arxml
+            ${CMAKE_SOURCE_DIR}/src/manifests/schema/AUTOSAR_00054.xsd
+    DEPENDS ${CMAKE_SOURCE_DIR}/src/manifests/machine_manifest.arxml
+            ${CMAKE_SOURCE_DIR}/src/manifests/schema/AUTOSAR_00054.xsd
+)
+
+add_custom_command(
+    TARGET  process_platform_manifests PRE_BUILD
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/scripts/manifests/arxml2json.py
+            ${CMAKE_SOURCE_DIR}/src/manifests/machine_manifest.arxml
+            ${CMAKE_BINARY_DIR}/manifests/machine_manifest.json
+    DEPENDS ${CMAKE_SOURCE_DIR}/src/manifests/machine_manifest.arxml
+)
+
+add_custom_command(
+    TARGET  process_platform_manifests PRE_BUILD
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/scripts/manifests/verify_arxml.py
+            ${CMAKE_SOURCE_DIR}/src/manifests/execution_manifest.arxml
+            ${CMAKE_SOURCE_DIR}/src/manifests/schema/AUTOSAR_00054.xsd
+    DEPENDS ${CMAKE_SOURCE_DIR}/src/manifests/execution_manifest.arxml
+            ${CMAKE_SOURCE_DIR}/src/manifests/schema/AUTOSAR_00054.xsd
+)
+
+add_custom_command(
+    TARGET  process_platform_manifests PRE_BUILD
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/scripts/manifests/arxml2json.py
+            ${CMAKE_SOURCE_DIR}/src/manifests/execution_manifest.arxml
+            ${CMAKE_BINARY_DIR}/manifests/execution_manifest.json
+    DEPENDS ${CMAKE_SOURCE_DIR}/src/manifests/execution_manifest.arxml
+)
+
 add_subdirectory(src)
 
-# Copy manifests to build directory for EM to load
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/src/manifests/ 
-     DESTINATION ${CMAKE_BINARY_DIR}/manifests)
+# [WORKAROUND] before manifest are correctly processed
+##########################################################
+# file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/src/manifests/machine_manifest.json
+#      DESTINATION ${CMAKE_BINARY_DIR}/manifests/machine_manifest.json)
+
+add_custom_command(
+    TARGET  process_platform_manifests POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/manifests/machine_manifest.json
+            ${CMAKE_BINARY_DIR}/manifests/machine_manifest.json
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/manifests/machine_manifest.json
+)
+
+##########################################################
 
 if(OPEN_AA_BUILD_APPS)
     add_subdirectory(apps)

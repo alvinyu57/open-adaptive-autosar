@@ -12,7 +12,7 @@
       {
         "name": "HelloWorldProcess",
         "executablePath": "apps/01_hello_world/openaa_example_hello_world_runner",
-        "executionManifest": "apps/01_hello_world/manifests/execution_manifest.json",
+        "executionManifest": "apps/01_hello_world/manifests/app_execution_manifest.json",
         "startupConfigs": [
           {
             "functionGroup": "MachineFG",

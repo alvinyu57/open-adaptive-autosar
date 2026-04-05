@@ -1,64 +1,75 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<AUTOSAR xmlns="http://autosar.org/schema/r25" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://autosar.org/schema/r25 AUTOSAR_00051.xsd">
+<AUTOSAR
+    xmlns="http://autosar.org/schema/r4.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://autosar.org/schema/r4.0 AUTOSAR_00054.xsd">
   <AR-PACKAGES>
+
+    <!-- Package for Machine definitions -->
     <AR-PACKAGE>
-      <SHORT-NAME>MachineManifest</SHORT-NAME>
+      <SHORT-NAME>Machines</SHORT-NAME>
       <ELEMENTS>
         <MACHINE>
-          <SHORT-NAME>WSL_VM_Machine</SHORT-NAME>
-          <MACHINE-DESIGN-REF DEST="MACHINE-DESIGN">/MachineDesign/WSL_VM_Design</MACHINE-DESIGN-REF>
+          <SHORT-NAME>ExampleMachine</SHORT-NAME>
+
+          <!-- Mandatory: Default startup/shutdown timeouts for applications -->
+          <DEFAULT-APPLICATION-TIMEOUT>
+            <ENTER-TIMEOUT-VALUE>5</ENTER-TIMEOUT-VALUE>
+            <EXIT-TIMEOUT-VALUE>5</EXIT-TIMEOUT-VALUE>
+          </DEFAULT-APPLICATION-TIMEOUT>
+
+          <!-- Reference to the Machine Design placeholder -->
+          <MACHINE-DESIGN-REF DEST="MACHINE-DESIGN">/MachineDesigns/ExampleMachineDesign</MACHINE-DESIGN-REF>
+
           <MODULE-INSTANTIATIONS>
+            <!-- Configuration for the Operating System -->
             <OS-MODULE-INSTANTIATION>
-              <SHORT-NAME>Ubuntu_OS</SHORT-NAME>
+              <SHORT-NAME>LinuxOS</SHORT-NAME>
               <RESOURCE-GROUPS>
+                <!-- Mandatory: At least one Resource Group must exist to limit usage -->
                 <RESOURCE-GROUP>
-                  <SHORT-NAME>DefaultGroup</SHORT-NAME>
+                  <SHORT-NAME>SystemResourceGroup</SHORT-NAME>
                 </RESOURCE-GROUP>
               </RESOURCE-GROUPS>
             </OS-MODULE-INSTANTIATION>
           </MODULE-INSTANTIATIONS>
-          <PROCESSORS>
-            <PROCESSOR>
-              <SHORT-NAME>CPU0</SHORT-NAME>
-              <CORES>
-                <CORE>
-                  <SHORT-NAME>Core0</SHORT-NAME>
-                  <CORE-ID>0</CORE-ID>
-                </CORE>
-              </CORES>
-            </PROCESSOR>
-          </PROCESSORS>
+
+          <!-- Trusted Platform behavior: activation of security features-->
+          <TRUSTED-PLATFORM-EXECUTABLE-LAUNCH-BEHAVIOR>STRICT-MODE</TRUSTED-PLATFORM-EXECUTABLE-LAUNCH-BEHAVIOR>
+        </MACHINE>
+      </ELEMENTS>
+    </AR-PACKAGE>
+
+    <!-- Package for Function Group Sets (State Management) -->
+    <AR-PACKAGE>
+      <SHORT-NAME>FunctionGroupSets</SHORT-NAME>
+      <ELEMENTS>
+        <FUNCTION-GROUP-SET>
+          <!-- The MachineFG represents the core lifecycle states of the machine -->
+          <SHORT-NAME>MachineFGSet</SHORT-NAME>
           <FUNCTION-GROUPS>
             <MODE-DECLARATION-GROUP-PROTOTYPE>
               <SHORT-NAME>MachineFG</SHORT-NAME>
-              <TYPE-TREF DEST="MODE-DECLARATION-GROUP">/MachineManifest/MachineStates</TYPE-TREF>
+              <TYPE-TREF DEST="MODE-DECLARATION-GROUP">/ModeDeclarationGroups/MachineStates</TYPE-TREF>
             </MODE-DECLARATION-GROUP-PROTOTYPE>
           </FUNCTION-GROUPS>
-          <PROCESSES>
-            <PROCESS>
-              <SHORT-NAME>HelloWorldProcess</SHORT-NAME>
-              <EXECUTABLE-REF DEST="EXECUTABLE">/HelloWorldExecutionManifest/HelloWorldProcessExecutable</EXECUTABLE-REF>
-            </PROCESS>
-          </PROCESSES>
-          <COMMUNICATION-CONNECTORS>
-            <ETHERNET-COMMUNICATION-CONNECTOR>
-              <SHORT-NAME>Eth0Connector</SHORT-NAME>
-              <UNICAST-NETWORK-ENDPOINT>
-                <SHORT-NAME>Eth0Endpoint</SHORT-NAME>
-                <NETWORK-ENDPOINT-ADDRESSES>
-                  <IPV-4-CONFIGURATION>
-                    <IPV-4-ADDRESS>192.168.0.100</IPV-4-ADDRESS>
-                    <IPV-4-NETMASK>255.255.255.0</IPV-4-NETMASK>
-                  </IPV-4-CONFIGURATION>
-                </NETWORK-ENDPOINT-ADDRESSES>
-              </UNICAST-NETWORK-ENDPOINT>
-            </ETHERNET-COMMUNICATION-CONNECTOR>
-          </COMMUNICATION-CONNECTORS>
-        </MACHINE>
+        </FUNCTION-GROUP-SET>
+      </ELEMENTS>
+    </AR-PACKAGE>
+
+    <!-- Package for Mode and State definitions -->
+    <AR-PACKAGE>
+      <SHORT-NAME>ModeDeclarationGroups</SHORT-NAME>
+      <ELEMENTS>
         <MODE-DECLARATION-GROUP>
           <SHORT-NAME>MachineStates</SHORT-NAME>
-          <INITIAL-MODE-REF DEST="MODE-DECLARATION">/MachineManifest/MachineStates/Startup</INITIAL-MODE-REF>
+          <!-- Initial mode active before any switches -->
+          <INITIAL-MODE-REF DEST="MODE-DECLARATION">/ModeDeclarationGroups/MachineStates/Startup</INITIAL-MODE-REF>
           <MODE-DECLARATIONS>
+            <MODE-DECLARATION>
+              <!-- Special state: cannot be referenced for startup -->
+              <SHORT-NAME>Off</SHORT-NAME>
+            </MODE-DECLARATION>
             <MODE-DECLARATION>
               <SHORT-NAME>Startup</SHORT-NAME>
             </MODE-DECLARATION>
@@ -66,14 +77,16 @@
               <SHORT-NAME>Running</SHORT-NAME>
             </MODE-DECLARATION>
             <MODE-DECLARATION>
-              <SHORT-NAME>Restart</SHORT-NAME>
+              <SHORT-NAME>Shutdown</SHORT-NAME>
             </MODE-DECLARATION>
             <MODE-DECLARATION>
-              <SHORT-NAME>Shutdown</SHORT-NAME>
+              <!-- Mandatory: Any functionGroup shall contain a 'Verify' state -->
+              <SHORT-NAME>Verify</SHORT-NAME>
             </MODE-DECLARATION>
           </MODE-DECLARATIONS>
         </MODE-DECLARATION-GROUP>
       </ELEMENTS>
     </AR-PACKAGE>
+
   </AR-PACKAGES>
 </AUTOSAR>
