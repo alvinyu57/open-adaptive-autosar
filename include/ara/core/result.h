@@ -32,24 +32,28 @@ public:
 
     T& Value() & {
         if (!value_.has_value()) {
-            error_->ThrowAsException();
+            if (error_.has_value()) {
+                error_.value().ThrowAsException();
+            }
         }
-        return *value_;
+        return value_.value();
     }
 
     const T& Value() const& {
         if (!value_.has_value()) {
-            error_->ThrowAsException();
+            if (error_.has_value()) {
+                error_.value().ThrowAsException();
+            }
         }
-        return *value_;
+        return value_.value();
     }
 
     E& Error() & noexcept {
-        return *error_;
+        return error_.value();
     }
 
     const E& Error() const& noexcept {
-        return *error_;
+        return error_.value();
     }
 
     T ValueOrThrow() const {
@@ -82,12 +86,12 @@ public:
 
     void ValueOrThrow() const {
         if (error_.has_value()) {
-            error_->ThrowAsException();
+            error_.value().ThrowAsException();
         }
     }
 
     const E& Error() const& noexcept {
-        return *error_;
+        return error_.value();
     }
 
 private:

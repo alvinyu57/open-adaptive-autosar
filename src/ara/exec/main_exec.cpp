@@ -33,8 +33,8 @@ extern char** environ;
 
 namespace {
 
-constexpr char kExecutionReportSocketEnv[] = "OPENAA_EXEC_REPORT_SOCKET";
-constexpr char kExecutionReportProcessEnv[] = "OPENAA_EXEC_PROCESS_NAME";
+constexpr std::string_view kExecutionReportSocketEnv = "OPENAA_EXEC_REPORT_SOCKET";
+constexpr std::string_view kExecutionReportProcessEnv = "OPENAA_EXEC_PROCESS_NAME";
 constexpr std::string_view kManagedFunctionGroup = "MachineFG";
 
 class JsonValue final {
@@ -707,11 +707,11 @@ private:
         sockaddr_un address{};
         address.sun_family = AF_UNIX;
         std::snprintf(
-            address.sun_path, sizeof(address.sun_path), "%s", report_socket_path_.c_str());
+            std::data(address.sun_path), std::size(address.sun_path), "%s", report_socket_path_.c_str());
 
         unlink(report_socket_path_.c_str());
         if (bind(report_socket_fd_,
-                 reinterpret_cast<const sockaddr*>(&address),
+                 std::bit_cast<const sockaddr*>(&address),
                  static_cast<socklen_t>(offsetof(sockaddr_un, sun_path) +
                                         report_socket_path_.size() + 1U)) == -1) {
             logger_.Error("OPENAA_EM",

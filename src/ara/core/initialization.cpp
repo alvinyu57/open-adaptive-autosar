@@ -24,7 +24,7 @@ Result<void> Initialize() noexcept {
     return {};
 }
 
-Result<void> Initialize(int, char*[]) noexcept {
+Result<void> Initialize(int, char**) noexcept {
     return Initialize();
 }
 

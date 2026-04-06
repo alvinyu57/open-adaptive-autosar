@@ -16,8 +16,8 @@
 namespace ara::exec {
 namespace {
 
-constexpr char kExecutionReportSocketEnv[] = "OPENAA_EXEC_REPORT_SOCKET";
-constexpr char kExecutionReportProcessEnv[] = "OPENAA_EXEC_PROCESS_NAME";
+constexpr std::string_view kExecutionReportSocketEnv = "OPENAA_EXEC_REPORT_SOCKET";
+constexpr std::string_view kExecutionReportProcessEnv = "OPENAA_EXEC_PROCESS_NAME";
 
 std::mutex g_sigterm_mutex;
 std::function<void()>* g_sigterm_callback{nullptr};
@@ -82,8 +82,8 @@ ExecutionClient::~ExecutionClient() noexcept {
 }
 
 ara::core::Result<void> ExecutionClient::ReportExecutionState(ExecutionState state) noexcept {
-    const char* socket_path = std::getenv(kExecutionReportSocketEnv);
-    const char* process_name = std::getenv(kExecutionReportProcessEnv);
+    const char* socket_path = std::getenv(kExecutionReportSocketEnv.data());
+    const char* process_name = std::getenv(kExecutionReportProcessEnv.data());
     if (socket_path != nullptr && process_name != nullptr) {
         if (state != ExecutionState::kRunning) {
             return ara::core::Result<void>{MakeErrorCode(ExecErrc::kInvalidArgument)};
@@ -96,7 +96,7 @@ ara::core::Result<void> ExecutionClient::ReportExecutionState(ExecutionState sta
 
         sockaddr_un address{};
         address.sun_family = AF_UNIX;
-        std::snprintf(address.sun_path, sizeof(address.sun_path), "%s", socket_path);
+        std::snprintf(std::data(address.sun_path), std::size(address.sun_path), "%s", socket_path);
 
         const std::string payload =
             "pid=" + std::to_string(getpid()) + ";process=" + process_name + ";state=Running";
@@ -104,7 +104,7 @@ ara::core::Result<void> ExecutionClient::ReportExecutionState(ExecutionState sta
                                    payload.data(),
                                    payload.size(),
                                    0,
-                                   reinterpret_cast<const sockaddr*>(&address),
+                                   std::bit_cast<const sockaddr*>(&address),
                                    sizeof(address));
         close(socket_fd);
         if (result == -1) {

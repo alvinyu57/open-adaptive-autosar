@@ -1,5 +1,8 @@
 #include <gtest/gtest.h>
 
+#include <array>
+#include <cstdint>
+
 #include "ara/core/initialization.h"
 #include "ara/core/core_error_domain.h"
 
@@ -34,9 +37,9 @@ TEST_F(InitializationTest, InitializeFailsWhenAlreadyInitialized) {
 
 TEST_F(InitializationTest, InitializeWithArgsSucceedsWhenNotInitialized) {
     int argc = 1;
-    char* argv[] = {(char*)"test_program"};
-
-    const auto result = ara::core::Initialize(argc, argv);
+    const char* const argv_data[] = {"test_program"};
+    // NOLINTNEXTLINE: cppcoreguidelines-pro-bounds-array-to-pointer-decay
+    const auto result = ara::core::Initialize(argc, const_cast<char**>(argv_data));
     EXPECT_TRUE(result.HasValue());
 }
 
@@ -47,8 +50,9 @@ TEST_F(InitializationTest, InitializeWithArgsFailsWhenAlreadyInitialized) {
 
     // Second initialization with args should fail
     int argc = 1;
-    char* argv[] = {(char*)"test_program"};
-    auto result2 = ara::core::Initialize(argc, argv);
+    const char* const argv_data[] = {"test_program"};
+    // NOLINTNEXTLINE: cppcoreguidelines-pro-bounds-array-to-pointer-decay
+    auto result2 = ara::core::Initialize(argc, const_cast<char**>(argv_data));
     EXPECT_FALSE(result2.HasValue());
     EXPECT_EQ(result2.Error(), ara::core::MakeErrorCode(ara::core::CoreErrc::kInvalidState));
 }

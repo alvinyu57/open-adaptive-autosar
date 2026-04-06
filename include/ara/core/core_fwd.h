@@ -20,6 +20,4 @@ class Vector;
 template <typename CharT, typename Traits, typename Allocator>
 class BasicString;
 
-class String;
-
 } // namespace ara::core
