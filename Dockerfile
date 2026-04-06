@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip3 install --break-system-packages "conan>=2.0,<3.0"
+RUN pip3 install --break-system-packages "conan>=2.0,<3.0" lxml
 
 RUN BUILD_GROUP="$(getent group "${GROUP_ID}" | cut -d: -f1 || true)" \
     && if [ -z "${BUILD_GROUP}" ]; then \

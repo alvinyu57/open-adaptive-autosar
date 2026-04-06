@@ -1,51 +1,53 @@
 #include <iostream>
-#include <memory>
-#include <stdexcept>
 
-#include "ara/core/application.hpp"
-#include "openaa/core/application.hpp"
-#include "openaa/exec/execution_manager.hpp"
-
-namespace {
-
-class TestApp final : public openaa::core::Application {
-public:
-    TestApp()
-        : openaa::core::Application("tests.smoke") {}
-
-private:
-    void OnInitialize(ara::core::RuntimeContext& context) override {
-        const bool inserted = context.Services().Register({
-            .service_id = "tests.smoke.service",
-            .endpoint = "local://tests-smoke",
-            .owner = Name(),
-        });
-
-        if (!inserted) {
-            throw std::runtime_error("service registration failed");
-        }
-    }
-
-    void OnStart(ara::core::RuntimeContext&) override {}
-
-    void OnStop(ara::core::RuntimeContext&) override {}
-};
-
-} // namespace
+#include "ara/core/initialization.h"
+#include "ara/core/instance_specifier.h"
+#include "ara/exec/execution_client.h"
+#include "ara/exec/function_group.h"
+#include "ara/exec/function_group_state.h"
+#include "ara/exec/state_client.h"
+#include "ara/log/logger.hpp"
 
 int main() {
-    openaa::core::Logger logger(std::cout);
-    openaa::exec::ExecutionManager manager(logger);
+    if (!ara::core::Initialize().HasValue()) {
+        std::cerr << "Failed to initialize ara::core" << std::endl;
+        return 1;
+    }
+    std::cout << "[SmokeTest] ara::core initialized." << std::endl;
 
-    manager.AddApplication(std::make_unique<TestApp>());
-    manager.Start();
-
-    const auto services = manager.Services().List();
-    if (services.size() != 1 || services.front().service_id != "tests.smoke.service") {
-        std::cerr << "unexpected service registry state\n";
+    ara::log::Logger logger(std::cout);
+    auto execution_client = ara::exec::ExecutionClient::Create([&logger]() {
+        logger.Warn("smoke", "Received SIGTERM");
+    });
+    if (!execution_client.HasValue()) {
         return 1;
     }
 
-    manager.Stop();
+    if (!execution_client.Value()
+             .ReportExecutionState(ara::exec::ExecutionState::kRunning)
+             .HasValue()) {
+        std::cerr << "Failed to report execution state" << std::endl;
+        return 1;
+    }
+    logger.Info("smoke", "Reported execution state: kRunning");
+
+    auto state_client =
+        ara::exec::StateClient::Create([](const ara::exec::ExecutionErrorEvent&) {});
+    if (!state_client.HasValue()) {
+        return 1;
+    }
+
+    ara::exec::FunctionGroup machine_fg(ara::core::InstanceSpecifier("MachineFG"));
+    auto transition =
+        state_client.Value().SetState(ara::exec::FunctionGroupState(machine_fg, "Startup"));
+    logger.Info("smoke", "Requested machine state transition to 'Startup'...");
+    transition.get();
+    logger.Info("smoke", "Transition to 'Startup' complete.");
+
+    if (!ara::core::Deinitialize().HasValue()) {
+        std::cerr << "Failed to deinitialize ara::core" << std::endl;
+        return 1;
+    }
+    std::cout << "[SmokeTest] ara::core deinitialized." << std::endl;
     return 0;
 }

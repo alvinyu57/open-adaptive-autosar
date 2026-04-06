@@ -4,94 +4,127 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
-BUILD_ROOT="${PROJECT_ROOT}/build-clang-tidy"
-BUILD_TYPE="Release"
-BUILD_DIR="${BUILD_ROOT}/${BUILD_TYPE}"
-RESULTS_DIR="${BUILD_ROOT}/results"
-RESULT_FILE="${RESULTS_DIR}/clang-tidy-result.txt"
-COMPILE_COMMANDS="${BUILD_DIR}/compile_commands.json"
+CONAN_BUILD_TYPE="Release"
+BUILD_DIR="${PROJECT_ROOT}/build/${CONAN_BUILD_TYPE}"
+OUTPUT_FILE_PATH="${BUILD_DIR}/results"
 
-cd "${PROJECT_ROOT}"
+BUILD_IN_DOCKER="False"
 
-conan profile detect --force
-conan install . --output-folder="${BUILD_ROOT}" --build=missing \
-    -s "build_type=${BUILD_TYPE}" \
-    -o 'shared=False' \
-    -o 'build_examples=False' \
-    -o 'build_tests=True'
+usage() {
+    cat <<'EOF'
+Usage: ./run_clang_tidy.sh [options]
 
-cmake -S "${PROJECT_ROOT}" -B "${BUILD_DIR}" \
-    -DCMAKE_TOOLCHAIN_FILE="${BUILD_DIR}/generators/conan_toolchain.cmake" \
-    -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
-    -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-    -DBUILD_SHARED_LIBS=OFF \
-    -DOPEN_AA_BUILD_EXAMPLES=OFF \
-    -DOPEN_AA_BUILD_TESTS=ON
+Options:
+    --docker                      Run clang-tidy in a Docker container
+    --help                        Show this help message
+    --output <file>               Specify output file for clang-tidy results (default: build/Release/results/clang-tidy-result.txt)
+EOF
+}
 
-mkdir -p "${RESULTS_DIR}"
-: > "${RESULT_FILE}"
+check_calng_tidy() {
 
-if [ ! -f "${COMPILE_COMMANDS}" ]; then
-    echo "compile_commands.json not found: ${COMPILE_COMMANDS}" >&2
-    exit 1
+    declare -a SOURCE_ROOTS=()
+
+    for candidate in src apps tests; do
+        if [ -d "${PROJECT_ROOT}/${candidate}" ]; then
+            SOURCE_ROOTS+=("${candidate}")
+        fi
+    done
+
+    if [ "${#SOURCE_ROOTS[@]}" -eq 0 ]; then
+        echo "No source roots found for clang-tidy."
+        exit 0
+    fi
+
+    if command -v rg >/dev/null 2>&1; then
+        mapfile -t SOURCE_FILES < <(
+            cd "${PROJECT_ROOT}" && \
+            rg --files "${SOURCE_ROOTS[@]}" \
+                -g '*.c' \
+                -g '*.cc' \
+                -g '*.cpp' \
+                -g '*.cxx' | \
+            sed "s|^|${PROJECT_ROOT}/|"
+        )
+    else
+        mapfile -t SOURCE_FILES < <(
+            find "${SOURCE_ROOTS[@]/#/${PROJECT_ROOT}/}" \
+                -type f \
+                \( -name '*.c' -o -name '*.cc' -o -name '*.cpp' -o -name '*.cxx' \) \
+                -printf '%p\n' \
+                | sort
+        )
+    fi
+
+    if [ "${#SOURCE_FILES[@]}" -eq 0 ]; then
+        echo "No source files found for clang-tidy."
+        exit 0
+    fi
+
+    if [ ! -f "${BUILD_DIR}/compile_commands.json" ]; then
+        echo "Clang-tidy build directory not found. Configuring and generating compile_commands.json..."
+
+        ${PROJECT_ROOT}/scripts/build/build.sh --build-tests
+
+    else
+        echo "Clang-tidy build directory already configured."
+    fi
+
+    echo "Running clang-tidy on ${#SOURCE_FILES[@]} file(s)..."
+
+    mkdir -p ${OUTPUT_FILE_PATH}
+    OUTPUT_FILE="${OUTPUT_FILE_PATH}/clang-tidy-result.txt"
+
+    cd "${PROJECT_ROOT}"
+
+    if clang-tidy -p "${BUILD_DIR}" "${SOURCE_FILES[@]}" > "${OUTPUT_FILE}" 2>&1; then
+        echo "No violations found!"
+        echo "Report saved to: ${OUTPUT_FILE}"
+        exit 0
+    else
+        echo "clang-tidy violations found!"
+        echo "Report saved to: ${OUTPUT_FILE}"
+        echo "Full violation report:"
+        cat "${OUTPUT_FILE}"
+        exit 1
+    fi
+
+}
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --output)
+            OUTPUT_FILE_PATH="$2"
+            shift 2
+            ;;
+        --docker)
+            BUILD_IN_DOCKER="True"
+            shift
+            ;;
+        --help)
+            usage
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1" >&2
+            usage >&2
+            exit 1
+            ;;
+    esac
+done
+
+if [[ ${BUILD_IN_DOCKER} == "True" ]]; then
+    echo "Running clang-tidy in Docker container..."
+    docker run \
+        --rm \
+        -v "${PROJECT_ROOT}:/workspace" \
+        -w /workspace openaa-build \
+        bash -lc "\
+            ./scripts/lint/run_clang_tidy_fix.sh
+        "
+else
+    echo "Running clang-tidy locally..."
+    check_calng_tidy
 fi
 
-mapfile -t SOURCE_FILES < <(
-    python3 - "${COMPILE_COMMANDS}" "${PROJECT_ROOT}" <<'PY'
-import json
-import sys
-from pathlib import Path
 
-compile_commands_path = Path(sys.argv[1]).resolve()
-project_root = Path(sys.argv[2]).resolve()
-
-with compile_commands_path.open("r", encoding="utf-8") as fh:
-    entries = json.load(fh)
-
-allowed_roots = (
-    project_root / "ara",
-    project_root / "platform",
-    project_root / "tests",
-)
-
-seen = set()
-files = []
-
-for entry in entries:
-    source_path = Path(entry["file"]).resolve()
-    if source_path.suffix not in {".c", ".cc", ".cpp"}:
-        continue
-    if not any(source_path.is_relative_to(root) for root in allowed_roots):
-        continue
-    source_str = str(source_path)
-    if source_str in seen:
-        continue
-    seen.add(source_str)
-    files.append(source_str)
-
-for path in sorted(files):
-    print(path)
-PY
-)
-
-if [ "${#SOURCE_FILES[@]}" -eq 0 ]; then
-    echo "No compiled source files found for clang-tidy check."
-    exit 0
-fi
-
-echo "Running clang-tidy check on ${#SOURCE_FILES[@]} file(s)..."
-
-if clang-tidy \
-    -p="${BUILD_DIR}" \
-    --quiet \
-    --warnings-as-errors='*' \
-    "${SOURCE_FILES[@]}" > "${RESULT_FILE}" 2>&1; then
-    echo ""
-    echo "No violations found!"
-    exit 0
-fi
-
-echo ""
-echo "clang-tidy violations found!"
-echo "Check details in ${RESULT_FILE}"
-exit 1
