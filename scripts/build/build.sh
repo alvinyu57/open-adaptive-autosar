@@ -122,6 +122,8 @@ else
 
     rm -rf build/${CONAN_BUILD_TYPE}
 
+    conan profile detect --force && 
+
     conan install . --output-folder=build --build=missing \
         -s build_type=${CONAN_BUILD_TYPE} \
         -o *:build_apps=${BUILD_APPS} \
