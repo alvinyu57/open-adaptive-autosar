@@ -47,6 +47,7 @@ class AdaptiveAutosarConan(ConanFile):
         toolchain.variables["BUILD_SHARED_LIBS"] = self.options.shared
         toolchain.variables["OPEN_AA_BUILD_APPS"] = self.options.build_apps
         toolchain.variables["OPEN_AA_BUILD_TESTS"] = self.options.build_tests
+        toolchain.variables["OPEN_AA_VERSION"] = self.version
         toolchain.generate()
 
         deps = CMakeDeps(self)

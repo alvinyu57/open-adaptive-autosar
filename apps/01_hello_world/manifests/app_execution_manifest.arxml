@@ -5,6 +5,17 @@
     xsi:schemaLocation="http://autosar.org/schema/r4.0 AUTOSAR_00054.xsd">
   <AR-PACKAGES>
     <AR-PACKAGE>
+      <SHORT-NAME>Executables</SHORT-NAME>
+      <ELEMENTS>
+        <EXECUTABLE>
+          <SHORT-NAME>openaa_example_hello_world_runner</SHORT-NAME>
+          <REPORTING-BEHAVIOR>REPORTS-EXECUTION-STATE</REPORTING-BEHAVIOR>
+          <VERSION>1.0.0</VERSION>
+        </EXECUTABLE>
+      </ELEMENTS>
+    </AR-PACKAGE>
+
+    <AR-PACKAGE>
       <SHORT-NAME>Processes</SHORT-NAME>
       <ELEMENTS>
         <PROCESS>
@@ -45,7 +56,11 @@
             </TAG-WITH-OPTIONAL-VALUE>
           </ENVIRONMENT-VARIABLES>
           <PERMISSION-TO-CREATE-CHILD-PROCESS>false</PERMISSION-TO-CREATE-CHILD-PROCESS>
-          <PROCESS-ARGUMENTS/>
+          <PROCESS-ARGUMENTS>
+            <PROCESS-ARGUMENT>
+              <ARGUMENT>--sample-mode=adaptive</ARGUMENT>
+            </PROCESS-ARGUMENT>
+          </PROCESS-ARGUMENTS>
           <SCHEDULING-POLICY>SCHEDULING-POLICY-FIFO</SCHEDULING-POLICY>
           <SCHEDULING-PRIORITY>15</SCHEDULING-PRIORITY>
           <TERMINATION-BEHAVIOR>PROCESS-IS-SELF-TERMINATING</TERMINATION-BEHAVIOR>
@@ -56,5 +71,6 @@
         </STARTUP-CONFIG>
       </ELEMENTS>
     </AR-PACKAGE>
+
   </AR-PACKAGES>
 </AUTOSAR>

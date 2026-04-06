@@ -36,15 +36,15 @@ Logger::Logger(std::ostream& output)
     : output_(&output) {}
 
 void Logger::Info(std::string_view component, std::string_view message) const {
-    (*output_) << "[" << TimestampNow() << "] [INFO] [" << component << "] " << message << '\n';
+    (*output_) << "[" << TimestampNow() << "][INFO][" << component << "]: " << message << '\n';
 }
 
 void Logger::Warn(std::string_view component, std::string_view message) const {
-    (*output_) << "[" << TimestampNow() << "] [WARN] [" << component << "] " << message << '\n';
+    (*output_) << "[" << TimestampNow() << "][WARN][" << component << "]: " << message << '\n';
 }
 
 void Logger::Error(std::string_view component, std::string_view message) const {
-    (*output_) << "[" << TimestampNow() << "] [ERROR] [" << component << "] " << message << '\n';
+    (*output_) << "[" << TimestampNow() << "][ERROR][" << component << "]: " << message << '\n';
 }
 
 } // namespace ara::log

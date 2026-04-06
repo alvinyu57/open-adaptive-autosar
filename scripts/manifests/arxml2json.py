@@ -1,16 +1,10 @@
 #!/usr/bin/env python3
 """
-ARXML to JSON Converter for Adaptive AUTOSAR Manifests
+ARXML to JSON converter for Adaptive AUTOSAR manifests.
 
-This script converts AUTOSAR ARXML (XML-based configuration) files to JSON format.
-It supports both machine manifests and execution manifests.
-
-Usage:
-    python arxml2json.py <input_arxml_file> <output_json_file>
-
-Example:
-    python arxml2json.py src/manifests/machine_manifest.arxml src/manifests/machine_manifest.json
-    python arxml2json.py apps/01_hello_world/manifests/execution_manifest.arxml apps/01_hello_world/manifests/execution_manifest.json
+The generated JSON is intentionally structured around AUTOSAR concepts instead of
+legacy project-specific shortcuts so that Execution Management can keep machine
+configuration separate from per-process execution configuration.
 """
 
 import json
@@ -29,18 +23,12 @@ class ARXMLConverter:
     with support for different manifest types (machine, execution).
     """
     
-    # Common AUTOSAR XML namespaces
-    NAMESPACES = {
-        'ar4': 'http://autosar.org/schema/r4.0',
-        'ar25': 'http://autosar.org/schema/r25',
-        'ar51': 'http://autosar.org/schema/r51'
-    }
-    
     def __init__(self):
         """Initialize the converter with logging setup."""
         self.logger = logging.getLogger(__name__)
         self.manifest_type = None
         self.namespace = None  # Will be detected from document
+        self.input_file = ""
 
         logging.basicConfig(
             level=logging.INFO,
@@ -84,6 +72,7 @@ class ARXMLConverter:
             bool: True if conversion was successful, False otherwise
         """
         try:
+            self.input_file = input_file
             # Parse the ARXML file
             tree = ET.parse(input_file)
             root = tree.getroot()
@@ -139,11 +128,17 @@ class ARXMLConverter:
             elif short_name and 'ExecutionManifest' in short_name:
                 self.manifest_type = 'execution'
                 return
-        
-        # Check for specific elements
+
+        input_name = Path(self.input_file).name
+        if "execution_manifest" in input_name:
+            self.manifest_type = 'execution'
+            return
+
         if root.find('.//ar:MACHINE', ns) is not None:
             self.manifest_type = 'machine'
         elif root.find('.//ar:PROCESS', ns) is not None:
+            self.manifest_type = 'execution'
+        elif root.find('.//ar:STARTUP-CONFIG', ns) is not None or root.find('.//ar:EXECUTABLE', ns) is not None:
             self.manifest_type = 'execution'
         else:
             self.manifest_type = 'generic'
@@ -160,37 +155,28 @@ class ARXMLConverter:
         """
         ns = self._make_namespace_map()
         machine_data = {}
-        
-        # Find the Machine element
+
         machine = root.find('.//ar:MACHINE', ns)
         if machine is not None:
             machine_obj = {}
             machine_obj['shortName'] = self._get_text(machine, 'ar:SHORT-NAME')
-            
-            # Extract default application timeouts
+
             timeout_elem = machine.find('ar:DEFAULT-APPLICATION-TIMEOUT', ns)
             if timeout_elem is not None:
-                machine_obj['defaultTimeout'] = {
+                machine_obj['defaultApplicationTimeout'] = {
                     'enterTimeoutValue': self._get_int(timeout_elem, 'ar:ENTER-TIMEOUT-VALUE'),
                     'exitTimeoutValue': self._get_int(timeout_elem, 'ar:EXIT-TIMEOUT-VALUE')
                 }
-            
-            # Extract function groups
+
             machine_obj['functionGroups'] = self._extract_function_groups(root)
-            
-            # Extract processes (if present in the machine manifest)
-            machine_obj['processes'] = self._extract_processes(machine)
-            
-            # Extract module instantiations (OS and middleware)
             machine_obj['modules'] = self._extract_modules(machine)
-            
-            # Extract trusted platform behavior
+
             tpelb = self._get_text(machine, 'ar:TRUSTED-PLATFORM-EXECUTABLE-LAUNCH-BEHAVIOR')
             if tpelb:
-                machine_obj['trustedPlatformBehavior'] = tpelb
-            
+                machine_obj['trustedPlatformExecutableLaunchBehavior'] = tpelb
+
             machine_data = {'machine': machine_obj}
-        
+
         return machine_data
     
     def _convert_execution_manifest(self, root: ET.Element) -> Dict[str, Any]:
@@ -205,40 +191,51 @@ class ARXMLConverter:
         """
         ns = self._make_namespace_map()
         execution_data = {}
-        
-        # Find the PROCESS element
-        process = root.find('.//ar:PROCESS', ns)
-        if process is not None:
-            process_obj = {}
-            process_obj['shortName'] = self._get_text(process, 'ar:SHORT-NAME')
-            
-            # Extract executable reference
-            executable_ref = self._get_text(process, 'ar:EXECUTABLE-REF')
-            if executable_ref:
-                # Extract just the executable name from the reference path
-                process_obj['executable'] = executable_ref.split('/')[-1]
-            
-            # Find the EXECUTABLE element to get reporting behavior
-            executable = root.find('.//ar:EXECUTABLE', ns)
-            if executable is not None:
-                reporting = self._get_text(executable, 'ar:REPORTING-BEHAVIOR')
-                if reporting:
-                    # Convert AUTOSAR naming to camelCase
-                    if reporting == 'REPORTS-EXECUTION-STATE':
-                        process_obj['reportingBehavior'] = 'reportsExecutionState'
-                    else:
-                        process_obj['reportingBehavior'] = reporting
-            
-            # Extract arguments and environment variables
-            process_obj['arguments'] = self._extract_arguments(process)
-            process_obj['environmentVariables'] = self._extract_env_vars(process)
-            
-            # Extract state dependent startup configs
-            process_obj['stateDependentStartupConfigs'] = self._extract_state_dependent_configs(root, process)
-            
-            execution_data = {'executionManifest': {'process': process_obj}}
-        
+
+        execution_data = {
+            'executionManifest': {
+                'processes': self._extract_processes(root),
+                'executables': self._extract_executables(root),
+                'startupConfigs': self._extract_startup_configs(root),
+            }
+        }
+
         return execution_data
+
+    def _extract_processes(self, root: ET.Element) -> List[Dict[str, Any]]:
+        """Extract all process definitions from the execution manifest."""
+        ns = self._make_namespace_map()
+        processes = []
+
+        for process in root.findall('.//ar:PROCESS', ns):
+            process_obj = {
+                'shortName': self._get_text(process, 'ar:SHORT-NAME'),
+                'stateDependentStartupConfigs': self._extract_state_dependent_configs(root, process),
+            }
+
+            executable_ref = self._get_first_text(process, [
+                'ar:EXECUTABLE-REFS/ar:EXECUTABLE-REF',
+                'ar:EXECUTABLE-REF'
+            ])
+            if executable_ref:
+                process_obj['executableRef'] = executable_ref
+                process_obj['executableName'] = executable_ref.split('/')[-1]
+
+            restart_attempts = self._get_int(process, 'ar:NUMBER-OF-RESTART-ATTEMPTS')
+            if restart_attempts is not None:
+                process_obj['numberOfRestartAttempts'] = restart_attempts
+
+            state_machine = process.find('ar:PROCESS-STATE-MACHINE', ns)
+            if state_machine is not None:
+                process_obj['processStateMachine'] = {
+                    'shortName': self._get_text(state_machine, 'ar:SHORT-NAME'),
+                    'typeRef': self._get_text(state_machine, 'ar:TYPE-TREF'),
+                }
+
+            if process_obj['shortName']:
+                processes.append(process_obj)
+
+        return processes
     
     def _extract_function_groups(self, root: ET.Element) -> List[Dict[str, Any]]:
         """
@@ -252,50 +249,39 @@ class ARXMLConverter:
         """
         ns = self._make_namespace_map()
         function_groups = []
-        
-        # Find Mode Declaration Groups which define states
-        mode_groups = root.findall('.//ar:MODE-DECLARATION-GROUP', ns)
-        for mode_group in mode_groups:
-            group_name = self._get_text(mode_group, 'ar:SHORT-NAME')
-            if group_name:
-                fg_obj = {
-                    'name': group_name,
-                    'states': [],
-                    'initialState': None
-                }
-                
-                # Extract states
-                modes = mode_group.findall('.//ar:MODE-DECLARATION', ns)
-                for mode in modes:
-                    mode_name = self._get_text(mode, 'ar:SHORT-NAME')
-                    if mode_name:
-                        fg_obj['states'].append(mode_name)
-                
-                # Extract initial mode
-                initial_mode_ref = mode_group.find('ar:INITIAL-MODE-REF', ns)
-                if initial_mode_ref is not None and initial_mode_ref.text:
-                    # Extract the last part of the reference path
-                    ref_path = initial_mode_ref.text
-                    fg_obj['initialState'] = ref_path.split('/')[-1]
-                
-                if fg_obj['states']:
-                    function_groups.append(fg_obj)
-        
+        mode_groups = {
+            self._get_text(mode_group, 'ar:SHORT-NAME'): mode_group
+            for mode_group in root.findall('.//ar:MODE-DECLARATION-GROUP', ns)
+        }
+
+        for prototype in root.findall('.//ar:MODE-DECLARATION-GROUP-PROTOTYPE', ns):
+            prototype_name = self._get_text(prototype, 'ar:SHORT-NAME')
+            type_ref = self._get_text(prototype, 'ar:TYPE-TREF')
+            type_name = type_ref.split('/')[-1] if type_ref else ''
+            mode_group = mode_groups.get(type_name)
+            if not prototype_name or mode_group is None:
+                continue
+
+            fg_obj = {
+                'name': prototype_name,
+                'typeRef': type_ref,
+                'states': [],
+                'initialState': None
+            }
+
+            for mode in mode_group.findall('.//ar:MODE-DECLARATION', ns):
+                mode_name = self._get_text(mode, 'ar:SHORT-NAME')
+                if mode_name:
+                    fg_obj['states'].append(mode_name)
+
+            initial_mode_ref = mode_group.find('ar:INITIAL-MODE-REF', ns)
+            if initial_mode_ref is not None and initial_mode_ref.text:
+                fg_obj['initialState'] = initial_mode_ref.text.split('/')[-1]
+
+            if fg_obj['states']:
+                function_groups.append(fg_obj)
+
         return function_groups
-    
-    def _extract_processes(self, parent: ET.Element) -> List[Dict[str, Any]]:
-        """
-        Extract process definitions.
-        
-        Args:
-            parent: The parent element to search within
-            
-        Returns:
-            list: List of process definitions
-        """
-        processes = []
-        # Additional process extraction logic can be added here
-        return processes
     
     def _extract_modules(self, parent: ET.Element) -> List[Dict[str, Any]]:
         """
@@ -349,11 +335,15 @@ class ARXMLConverter:
         """
         ns = self._make_namespace_map()
         arguments = []
-        # Extract from specific elements if present
-        arg_elem = parent.find('.//ar:ARGUMENTS', ns)
-        if arg_elem is not None:
-            args = arg_elem.findall('ar:TEXT', ns)
-            arguments = [self._get_text(arg, '.') for arg in args]
+        arg_elem = parent.find('ar:PROCESS-ARGUMENTS', ns)
+        if arg_elem is None:
+            return arguments
+
+        for argument in arg_elem.findall('ar:PROCESS-ARGUMENT', ns):
+            value = self._get_text(argument, 'ar:ARGUMENT')
+            if value:
+                arguments.append(value)
+
         return arguments
     
     def _extract_env_vars(self, parent: ET.Element) -> List[Dict[str, str]]:
@@ -368,15 +358,14 @@ class ARXMLConverter:
         """
         ns = self._make_namespace_map()
         env_vars = []
-        # Extract from specific elements if present
-        env_elem = parent.find('.//ar:ENVIRONMENT-VARIABLES', ns)
+        env_elem = parent.find('ar:ENVIRONMENT-VARIABLES', ns)
         if env_elem is not None:
-            vars_list = env_elem.findall('ar:VARIABLE', ns)
+            vars_list = env_elem.findall('ar:TAG-WITH-OPTIONAL-VALUE', ns)
             for var in vars_list:
-                var_name = self._get_text(var, 'ar:NAME')
+                var_name = self._get_text(var, 'ar:KEY')
                 var_value = self._get_text(var, 'ar:VALUE')
                 if var_name:
-                    env_vars.append({'name': var_name, 'value': var_value or ''})
+                    env_vars.append({'key': var_name, 'value': var_value or ''})
         return env_vars
     
     def _extract_state_dependent_configs(self, root: ET.Element, process_elem: Optional[ET.Element] = None) -> List[Dict[str, Any]]:
@@ -393,70 +382,101 @@ class ARXMLConverter:
         ns = self._make_namespace_map()
         configs = []
         
-        # Find the STATE-DEPENDENT-STARTUP-CONFIGS container
         state_configs_container = root.find('.//ar:STATE-DEPENDENT-STARTUP-CONFIGS', ns)
         if state_configs_container is None and process_elem is not None:
             state_configs_container = process_elem.find('ar:STATE-DEPENDENT-STARTUP-CONFIGS', ns)
-        
+
         if state_configs_container is not None:
             state_configs = state_configs_container.findall('ar:STATE-DEPENDENT-STARTUP-CONFIG', ns)
-            
+
             for config in state_configs:
                 config_obj = {}
                 config_obj['functionGroupStates'] = []
-                
-                # Extract function group state references
+
                 fg_state_irefs = config.find('ar:FUNCTION-GROUP-STATE-IREFS', ns)
                 if fg_state_irefs is not None:
-                    fg_state_refs = fg_state_irefs.findall('.//ar:FUNCTION-GROUP-STATE-IN-FUNCTION-GROUP-SET-INSTANCE-REF', ns)
+                    fg_state_refs = fg_state_irefs.findall('ar:FUNCTION-GROUP-STATE-IREF', ns)
                     for fg_state_ref in fg_state_refs:
                         context_ref = self._get_text(fg_state_ref, 'ar:CONTEXT-MODE-DECLARATION-GROUP-PROTOTYPE-REF')
                         target_ref = self._get_text(fg_state_ref, 'ar:TARGET-MODE-DECLARATION-REF')
-                        
+
                         if context_ref and target_ref:
                             fg_obj = {
                                 'functionGroup': context_ref.split('/')[-1],
                                 'state': target_ref.split('/')[-1]
                             }
                             config_obj['functionGroupStates'].append(fg_obj)
-                
-                # Extract startup configuration reference
+
                 startup_config_ref = self._get_text(config, 'ar:STARTUP-CONFIG-REF')
-                
-                # Find the referenced STARTUP-CONFIG element
-                startup_config_obj = {
-                    'arguments': [],
-                    'environmentVariables': [],
-                    'terminationBehavior': 'processIsSelfTerminating'
-                }
-                
                 if startup_config_ref:
-                    # Search for the startup config by reference
-                    startup_configs = root.findall('.//ar:STARTUP-CONFIG', ns)
-                    for startup in startup_configs:
-                        if startup_config_ref.endswith(self._get_text(startup, 'ar:SHORT-NAME')):
-                            startup_config_obj['arguments'] = self._extract_arguments(startup)
-                            startup_config_obj['environmentVariables'] = self._extract_env_vars(startup)
-                            termination = self._get_text(startup, 'ar:TERMINATION-BEHAVIOR')
-                            if termination:
-                                startup_config_obj['terminationBehavior'] = termination
-                            break
-                
-                config_obj['startupConfig'] = startup_config_obj
+                    config_obj['startupConfigRef'] = startup_config_ref
+
                 configs.append(config_obj)
-        
-        # If no specific configs found, create a default one
-        if not configs:
-            configs = [{
-                'functionGroupStates': [],
-                'startupConfig': {
-                    'arguments': [],
-                    'environmentVariables': [],
-                    'terminationBehavior': 'processIsSelfTerminating'
-                }
-            }]
-        
+
         return configs
+
+    def _extract_executables(self, root: ET.Element) -> List[Dict[str, Any]]:
+        """Extract executable definitions referenced by the execution manifest."""
+        ns = self._make_namespace_map()
+        executables = []
+
+        for executable in root.findall('.//ar:EXECUTABLE', ns):
+            executable_obj = {
+                'shortName': self._get_text(executable, 'ar:SHORT-NAME'),
+            }
+
+            reporting = self._get_text(executable, 'ar:REPORTING-BEHAVIOR')
+            if reporting:
+                executable_obj['reportingBehavior'] = reporting
+
+            version = self._get_text(executable, 'ar:VERSION')
+            if version:
+                executable_obj['version'] = version
+
+            if executable_obj['shortName']:
+                executables.append(executable_obj)
+
+        return executables
+
+    def _extract_startup_configs(self, root: ET.Element) -> List[Dict[str, Any]]:
+        """Extract reusable startup configuration objects."""
+        ns = self._make_namespace_map()
+        startup_configs = []
+
+        for startup in root.findall('.//ar:STARTUP-CONFIG', ns):
+            startup_obj = {
+                'shortName': self._get_text(startup, 'ar:SHORT-NAME'),
+                'processArguments': self._extract_arguments(startup),
+                'environmentVariables': self._extract_env_vars(startup),
+            }
+
+            permission = self._get_text(startup, 'ar:PERMISSION-TO-CREATE-CHILD-PROCESS')
+            if permission:
+                startup_obj['permissionToCreateChildProcess'] = permission.lower() == 'true'
+
+            scheduling_policy = self._get_text(startup, 'ar:SCHEDULING-POLICY')
+            if scheduling_policy:
+                startup_obj['schedulingPolicy'] = scheduling_policy
+
+            scheduling_priority = self._get_int(startup, 'ar:SCHEDULING-PRIORITY')
+            if scheduling_priority is not None:
+                startup_obj['schedulingPriority'] = scheduling_priority
+
+            termination_behavior = self._get_text(startup, 'ar:TERMINATION-BEHAVIOR')
+            if termination_behavior:
+                startup_obj['terminationBehavior'] = termination_behavior
+
+            timeout = startup.find('ar:TIMEOUT', ns)
+            if timeout is not None:
+                startup_obj['timeout'] = {
+                    'enterTimeoutValue': self._get_int(timeout, 'ar:ENTER-TIMEOUT-VALUE'),
+                    'exitTimeoutValue': self._get_int(timeout, 'ar:EXIT-TIMEOUT-VALUE'),
+                }
+
+            if startup_obj['shortName']:
+                startup_configs.append(startup_obj)
+
+        return startup_configs
     
     def _generic_convert(self, root: ET.Element) -> Dict[str, Any]:
         """
@@ -532,6 +552,14 @@ class ARXMLConverter:
         found = element.find(path, ns)
         if found is not None and found.text:
             return found.text.strip()
+        return default
+
+    def _get_first_text(self, element: ET.Element, paths: List[str], default: str = '') -> str:
+        """Return the first non-empty text value among a list of XPath expressions."""
+        for path in paths:
+            value = self._get_text(element, path)
+            if value:
+                return value
         return default
     
     def _get_int(self, element: ET.Element, path: str) -> Optional[int]:

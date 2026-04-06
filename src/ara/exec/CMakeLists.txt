@@ -41,6 +41,10 @@ target_include_directories(ara_exec
         ${CMAKE_CURRENT_SOURCE_DIR}     # access to internal headers e.g. em_runtime_state.hpp
 )
 
+target_compile_definitions(ara_exec PRIVATE 
+    OPEN_AA_VERSION="${OPEN_AA_VERSION}"
+)
+
 target_link_libraries(ara_exec
     PRIVATE
         ara_exec_lib
