@@ -10,14 +10,12 @@ class AdaptiveAutosarConan(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
 
     options = {
-        "shared": [True, False],
         "fPIC": [True, False],
         "build_apps": [True, False],
         "build_tests": [True, False],
     }
 
     default_options = {
-        "shared": False,
         "fPIC": True,
         "build_apps": False,
         "build_tests": False,
@@ -33,10 +31,6 @@ class AdaptiveAutosarConan(ConanFile):
         if self.settings.os == "Windows":
             del self.options.fPIC
 
-    def configure(self):
-        if self.options.shared:
-            self.options.rm_safe("fPIC")
-
     def layout(self):
         cmake_layout(self)
         self.folders.build = str(self.settings.build_type)
@@ -44,7 +38,6 @@ class AdaptiveAutosarConan(ConanFile):
 
     def generate(self):
         toolchain = CMakeToolchain(self)
-        toolchain.variables["BUILD_SHARED_LIBS"] = self.options.shared
         toolchain.variables["OPEN_AA_BUILD_APPS"] = self.options.build_apps
         toolchain.variables["OPEN_AA_BUILD_TESTS"] = self.options.build_tests
         toolchain.variables["OPEN_AA_VERSION"] = self.version

@@ -87,7 +87,6 @@ This keeps the host machine clean and makes Docker the single source of truth fo
 
 The mapping is:
 
-- Conan `shared` -> CMake `BUILD_SHARED_LIBS`
 - Conan `build_examples` -> CMake `OPEN_AA_BUILD_EXAMPLES`
 - Conan `build_tests` -> CMake `OPEN_AA_BUILD_TESTS`
 

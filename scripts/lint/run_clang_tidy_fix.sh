@@ -76,29 +76,20 @@ if [ "${#SOURCE_FILES[@]}" -eq 0 ]; then
     exit 0
 fi
 
-if [ ! -f "${BUILD_DIR}/compile_commands.json" ]; then
-    echo "Clang-tidy build directory not found. Configuring and generating compile_commands.json..."
-
-    conan profile detect --force && 
-    conan install "${PROJECT_ROOT}" \
-        --build=missing \
-        -s build_type=${CONAN_BUILD_TYPE} \
-        -o build_apps=${BUILD_APPS} \
-        -o build_tests=${BUILD_TESTS}
-
-    conan build . --output-folder=${BUILD_DIR} \
-        -o build_apps=${BUILD_APPS} \
-        -o build_tests=${BUILD_TESTS}
-
-else
-    echo "Clang-tidy build directory already configured."
-fi
-
 echo "Fixing clang-tidy issues on ${#SOURCE_FILES[@]} file(s)..."
 cd "${PROJECT_ROOT}"
 
 mkdir -p ${OUTPUT_FILE_PATH}
 OUTPUT_FILE="${OUTPUT_FILE_PATH}/clang-tidy-result.txt"
+
+if [ ! -f "${BUILD_DIR}/compile_commands.json" ]; then
+    echo "Clang-tidy build directory not found. Configuring and generating compile_commands.json..."
+
+    ${PROJECT_ROOT}/scripts/build/build.sh --build-tests
+
+else
+    echo "Clang-tidy build directory already configured."
+fi
 
 
 if clang-tidy -p "${BUILD_DIR}" "${SOURCE_FILES[@]}" -fix > "${OUTPUT_FILE}" 2>&1; then

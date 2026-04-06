@@ -8,7 +8,7 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 if command -v rg >/dev/null 2>&1; then
     mapfile -t SOURCE_FILES < <(
         cd "${PROJECT_ROOT}" && \
-        rg --files ara platform tests examples \
+        rg --files src tests apps \
             -g '*.c' \
             -g '*.cc' \
             -g '*.cpp' \

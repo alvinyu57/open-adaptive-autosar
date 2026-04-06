@@ -35,7 +35,7 @@ TEST_F(InitializationTest, InitializeFailsWhenAlreadyInitialized) {
 TEST_F(InitializationTest, InitializeWithArgsSucceedsWhenNotInitialized) {
     int argc = 1;
     char* argv[] = {(char*)"test_program"};
-    
+
     const auto result = ara::core::Initialize(argc, argv);
     EXPECT_TRUE(result.HasValue());
 }
