@@ -36,6 +36,7 @@ public:
                 error_.value().ThrowAsException();
             }
         }
+        // NOLINTNEXTLINE: bugprone-unchecked-optional-access
         return value_.value();
     }
 
@@ -45,14 +46,17 @@ public:
                 error_.value().ThrowAsException();
             }
         }
+        // NOLINTNEXTLINE: bugprone-unchecked-optional-access
         return value_.value();
     }
 
-    E& Error() & noexcept {
+    E& Error() & noexcept(false) {
+        // NOLINTNEXTLINE: bugprone-unchecked-optional-access
         return error_.value();
     }
 
-    const E& Error() const& noexcept {
+    const E& Error() const& noexcept(false) {
+        // NOLINTNEXTLINE: bugprone-unchecked-optional-access
         return error_.value();
     }
 
@@ -90,7 +94,8 @@ public:
         }
     }
 
-    const E& Error() const& noexcept {
+    const E& Error() const& noexcept(false) {
+        // NOLINTNEXTLINE: bugprone-unchecked-optional-access
         return error_.value();
     }
 

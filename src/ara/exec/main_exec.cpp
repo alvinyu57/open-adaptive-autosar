@@ -706,8 +706,10 @@ private:
 
         sockaddr_un address{};
         address.sun_family = AF_UNIX;
-        std::snprintf(
-            std::data(address.sun_path), std::size(address.sun_path), "%s", report_socket_path_.c_str());
+        std::snprintf(std::data(address.sun_path),
+                      std::size(address.sun_path),
+                      "%s",
+                      report_socket_path_.c_str());
 
         unlink(report_socket_path_.c_str());
         if (bind(report_socket_fd_,
