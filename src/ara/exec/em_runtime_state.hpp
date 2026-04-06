@@ -20,8 +20,8 @@ public:
     ara::core::Result<void> ReportExecutionState(ExecutionState state) noexcept;
     ara::core::Future<void> SetState(const FunctionGroupState& state) noexcept;
     ara::core::Future<void> GetInitialMachineStateTransitionResult() noexcept;
-    ara::core::Result<ExecutionErrorEvent> GetExecutionError(
-        const FunctionGroupState& function_group_state) noexcept;
+    ara::core::Result<ExecutionErrorEvent>
+    GetExecutionError(const FunctionGroupState& function_group_state) noexcept;
 
 private:
     struct FunctionGroupRecord {

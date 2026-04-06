@@ -15,21 +15,17 @@ StateClient::StateClient(
 }
 
 ara::core::Result<StateClient> StateClient::Create(
-    std::function<void(const ara::exec::ExecutionErrorEvent&)> undefined_state_callback)
-    noexcept {
+    std::function<void(const ara::exec::ExecutionErrorEvent&)> undefined_state_callback) noexcept {
     if (!undefined_state_callback) {
-        return ara::core::Result<StateClient>{
-            MakeErrorCode(ExecErrc::kInvalidArgument)};
+        return ara::core::Result<StateClient>{MakeErrorCode(ExecErrc::kInvalidArgument)};
     }
 
     try {
-        return ara::core::Result<StateClient>{
-            StateClient(std::move(undefined_state_callback))};
+        return ara::core::Result<StateClient>{StateClient(std::move(undefined_state_callback))};
     } catch (const ExecException& exception) {
         return ara::core::Result<StateClient>{exception.Error()};
     } catch (...) {
-        return ara::core::Result<StateClient>{
-            MakeErrorCode(ExecErrc::kNoCommunication)};
+        return ara::core::Result<StateClient>{MakeErrorCode(ExecErrc::kNoCommunication)};
     }
 }
 
@@ -41,8 +37,8 @@ ara::core::Future<void> StateClient::GetInitialMachineStateTransitionResult() co
     return internal::RuntimeState::Instance().GetInitialMachineStateTransitionResult();
 }
 
-ara::core::Result<ExecutionErrorEvent> StateClient::GetExecutionError(
-    const FunctionGroupState& function_group_state) noexcept {
+ara::core::Result<ExecutionErrorEvent>
+StateClient::GetExecutionError(const FunctionGroupState& function_group_state) noexcept {
     return internal::RuntimeState::Instance().GetExecutionError(function_group_state);
 }
 

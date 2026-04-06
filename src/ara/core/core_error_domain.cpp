@@ -11,18 +11,18 @@ const char* CoreErrorDomain::Name() const noexcept {
 
 const char* CoreErrorDomain::Message(CodeType error_code) const noexcept {
     switch (static_cast<CoreErrc>(error_code)) {
-    case CoreErrc::kInvalidArgument:
-        return "invalid argument";
-    case CoreErrc::kInvalidState:
-        return "invalid state";
-    case CoreErrc::kOutOfRange:
-        return "out of range";
-    case CoreErrc::kNoSuchElement:
-        return "no such element";
-    case CoreErrc::kAlreadyExists:
-        return "already exists";
-    default:
-        return "unknown core error";
+        case CoreErrc::kInvalidArgument:
+            return "invalid argument";
+        case CoreErrc::kInvalidState:
+            return "invalid state";
+        case CoreErrc::kOutOfRange:
+            return "out of range";
+        case CoreErrc::kNoSuchElement:
+            return "no such element";
+        case CoreErrc::kAlreadyExists:
+            return "already exists";
+        default:
+            return "unknown core error";
     }
 }
 

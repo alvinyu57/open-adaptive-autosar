@@ -23,15 +23,16 @@ int main() {
         return 1;
     }
 
-    if (!execution_client.Value().ReportExecutionState(ara::exec::ExecutionState::kRunning)
+    if (!execution_client.Value()
+             .ReportExecutionState(ara::exec::ExecutionState::kRunning)
              .HasValue()) {
         std::cerr << "Failed to report execution state" << std::endl;
         return 1;
     }
     logger.Info("smoke", "Reported execution state: kRunning");
 
-    auto state_client = ara::exec::StateClient::Create(
-        [](const ara::exec::ExecutionErrorEvent&) {});
+    auto state_client =
+        ara::exec::StateClient::Create([](const ara::exec::ExecutionErrorEvent&) {});
     if (!state_client.HasValue()) {
         return 1;
     }

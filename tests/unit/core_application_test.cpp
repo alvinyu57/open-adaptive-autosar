@@ -7,10 +7,9 @@ TEST(ExecErrorDomainTest, ReturnsExpectedDomainMetadata) {
     const auto& domain = ara::exec::GetExecErrorDomain();
 
     EXPECT_STREQ(domain.Name(), "Exec");
-    EXPECT_STREQ(
-        domain.Message(static_cast<ara::core::ErrorDomain::CodeType>(
-            ara::exec::ExecErrc::kInvalidTransition)),
-        "invalid transition");
+    EXPECT_STREQ(domain.Message(static_cast<ara::core::ErrorDomain::CodeType>(
+                     ara::exec::ExecErrc::kInvalidTransition)),
+                 "invalid transition");
 }
 
 TEST(ExecutionClientTest, RejectsMissingTerminationHandler) {

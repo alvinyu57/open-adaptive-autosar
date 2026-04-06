@@ -53,21 +53,18 @@ ExecutionClient::ExecutionClient(std::function<void()> termination_handler)
     owns_sigterm_handler_ = true;
 }
 
-ara::core::Result<ExecutionClient> ExecutionClient::Create(
-    std::function<void()> termination_handler) noexcept {
+ara::core::Result<ExecutionClient>
+ExecutionClient::Create(std::function<void()> termination_handler) noexcept {
     if (!termination_handler) {
-        return ara::core::Result<ExecutionClient>{
-            MakeErrorCode(ExecErrc::kInvalidArgument)};
+        return ara::core::Result<ExecutionClient>{MakeErrorCode(ExecErrc::kInvalidArgument)};
     }
 
     try {
-        return ara::core::Result<ExecutionClient>{
-            ExecutionClient(std::move(termination_handler))};
+        return ara::core::Result<ExecutionClient>{ExecutionClient(std::move(termination_handler))};
     } catch (const ExecException& exception) {
         return ara::core::Result<ExecutionClient>{exception.Error()};
     } catch (...) {
-        return ara::core::Result<ExecutionClient>{
-            MakeErrorCode(ExecErrc::kNoCommunication)};
+        return ara::core::Result<ExecutionClient>{MakeErrorCode(ExecErrc::kNoCommunication)};
     }
 }
 
@@ -101,8 +98,8 @@ ara::core::Result<void> ExecutionClient::ReportExecutionState(ExecutionState sta
         address.sun_family = AF_UNIX;
         std::snprintf(address.sun_path, sizeof(address.sun_path), "%s", socket_path);
 
-        const std::string payload = "pid=" + std::to_string(getpid()) + ";process=" +
-                                    process_name + ";state=Running";
+        const std::string payload =
+            "pid=" + std::to_string(getpid()) + ";process=" + process_name + ";state=Running";
         const auto result = sendto(socket_fd,
                                    payload.data(),
                                    payload.size(),

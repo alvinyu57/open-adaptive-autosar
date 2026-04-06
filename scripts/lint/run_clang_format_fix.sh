@@ -32,9 +32,9 @@ if [ "${#SOURCE_FILES[@]}" -eq 0 ]; then
     exit 0
 fi
 
-echo "Running clang-format check on ${#SOURCE_FILES[@]} file(s)..."
+echo "Fixing clang-format check on ${#SOURCE_FILES[@]} file(s)..."
 
 cd "${PROJECT_ROOT}"
-clang-format --dry-run --Werror --style=file "${SOURCE_FILES[@]}"
+clang-format -i --style=file "${SOURCE_FILES[@]}"
 
 echo "clang-format check passed."

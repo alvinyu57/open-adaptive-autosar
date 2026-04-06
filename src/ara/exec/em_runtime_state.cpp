@@ -42,14 +42,13 @@ ara::core::Future<void> RuntimeState::GetInitialMachineStateTransitionResult() n
     return ara::core::MakeReadyFuture(ara::core::Result<void>{});
 }
 
-ara::core::Result<ExecutionErrorEvent> RuntimeState::GetExecutionError(
-    const FunctionGroupState& function_group_state) noexcept {
+ara::core::Result<ExecutionErrorEvent>
+RuntimeState::GetExecutionError(const FunctionGroupState& function_group_state) noexcept {
     std::scoped_lock lock(mutex_);
 
     const auto it = function_groups_.find(MakeKey(function_group_state.GetFunctionGroup()));
     if (it == function_groups_.end() || !it->second.is_undefined) {
-        return ara::core::Result<ExecutionErrorEvent>{
-            MakeErrorCode(ExecErrc::kOperationFailed)};
+        return ara::core::Result<ExecutionErrorEvent>{MakeErrorCode(ExecErrc::kOperationFailed)};
     }
 
     return ara::core::Result<ExecutionErrorEvent>{ExecutionErrorEvent{

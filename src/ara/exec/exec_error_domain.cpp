@@ -14,24 +14,24 @@ const char* ExecErrorDomain::Name() const noexcept {
 
 const char* ExecErrorDomain::Message(CodeType error_code) const noexcept {
     switch (static_cast<ExecErrc>(error_code)) {
-    case ExecErrc::kNoCommunication:
-        return "communication error";
-    case ExecErrc::kInvalidMetaModelIdentifier:
-        return "invalid meta model identifier";
-    case ExecErrc::kOperationCanceled:
-        return "operation canceled";
-    case ExecErrc::kOperationFailed:
-        return "operation failed";
-    case ExecErrc::kInvalidTransition:
-        return "invalid transition";
-    case ExecErrc::kIntegrityOrAuthenticityCheckFailed:
-        return "integrity or authenticity check failed";
-    case ExecErrc::kUnexpectedTermination:
-        return "unexpected termination";
-    case ExecErrc::kInvalidArgument:
-        return "invalid argument";
-    default:
-        return "unknown execution management error";
+        case ExecErrc::kNoCommunication:
+            return "communication error";
+        case ExecErrc::kInvalidMetaModelIdentifier:
+            return "invalid meta model identifier";
+        case ExecErrc::kOperationCanceled:
+            return "operation canceled";
+        case ExecErrc::kOperationFailed:
+            return "operation failed";
+        case ExecErrc::kInvalidTransition:
+            return "invalid transition";
+        case ExecErrc::kIntegrityOrAuthenticityCheckFailed:
+            return "integrity or authenticity check failed";
+        case ExecErrc::kUnexpectedTermination:
+            return "unexpected termination";
+        case ExecErrc::kInvalidArgument:
+            return "invalid argument";
+        default:
+            return "unknown execution management error";
     }
 }
 

@@ -42,33 +42,68 @@ public:
     using Object = std::map<std::string, JsonValue>;
     using Array = std::vector<JsonValue>;
 
-    enum class Kind { kNull, kString, kBool, kNumber, kObject, kArray };
+    enum class Kind {
+        kNull,
+        kString,
+        kBool,
+        kNumber,
+        kObject,
+        kArray
+    };
 
     JsonValue() = default;
+
     explicit JsonValue(std::string value)
         : kind_(Kind::kString),
           string_value_(std::move(value)) {}
+
     explicit JsonValue(bool value)
         : kind_(Kind::kBool),
           bool_value_(value) {}
+
     explicit JsonValue(double value)
         : kind_(Kind::kNumber),
           number_value_(value) {}
+
     explicit JsonValue(Object value)
         : kind_(Kind::kObject),
           object_value_(std::move(value)) {}
+
     explicit JsonValue(Array value)
         : kind_(Kind::kArray),
           array_value_(std::move(value)) {}
 
-    [[nodiscard]] bool IsObject() const noexcept { return kind_ == Kind::kObject; }
-    [[nodiscard]] bool IsArray() const noexcept { return kind_ == Kind::kArray; }
-    [[nodiscard]] bool IsString() const noexcept { return kind_ == Kind::kString; }
-    [[nodiscard]] bool IsNumber() const noexcept { return kind_ == Kind::kNumber; }
-    [[nodiscard]] const Object& AsObject() const { return object_value_; }
-    [[nodiscard]] const Array& AsArray() const { return array_value_; }
-    [[nodiscard]] const std::string& AsString() const { return string_value_; }
-    [[nodiscard]] double AsNumber() const { return number_value_; }
+    [[nodiscard]] bool IsObject() const noexcept {
+        return kind_ == Kind::kObject;
+    }
+
+    [[nodiscard]] bool IsArray() const noexcept {
+        return kind_ == Kind::kArray;
+    }
+
+    [[nodiscard]] bool IsString() const noexcept {
+        return kind_ == Kind::kString;
+    }
+
+    [[nodiscard]] bool IsNumber() const noexcept {
+        return kind_ == Kind::kNumber;
+    }
+
+    [[nodiscard]] const Object& AsObject() const {
+        return object_value_;
+    }
+
+    [[nodiscard]] const Array& AsArray() const {
+        return array_value_;
+    }
+
+    [[nodiscard]] const std::string& AsString() const {
+        return string_value_;
+    }
+
+    [[nodiscard]] double AsNumber() const {
+        return number_value_;
+    }
 
 private:
     Kind kind_{Kind::kNull};
@@ -241,11 +276,9 @@ private:
                 ++position_;
             }
         }
-        if (position_ < text_.size() &&
-            (text_[position_] == 'e' || text_[position_] == 'E')) {
+        if (position_ < text_.size() && (text_[position_] == 'e' || text_[position_] == 'E')) {
             ++position_;
-            if (position_ < text_.size() &&
-                (text_[position_] == '+' || text_[position_] == '-')) {
+            if (position_ < text_.size() && (text_[position_] == '+' || text_[position_] == '-')) {
                 ++position_;
             }
             while (position_ < text_.size() &&
@@ -258,7 +291,8 @@ private:
     }
 
     void SkipWhitespace() {
-        while (position_ < text_.size() && std::isspace(static_cast<unsigned char>(text_[position_]))) {
+        while (position_ < text_.size() &&
+               std::isspace(static_cast<unsigned char>(text_[position_]))) {
             ++position_;
         }
     }
@@ -295,7 +329,8 @@ std::string RequireStringMember(const JsonValue::Object& object, const std::stri
     return value.AsString();
 }
 
-const JsonValue::Array& RequireArrayMember(const JsonValue::Object& object, const std::string& key) {
+const JsonValue::Array& RequireArrayMember(const JsonValue::Object& object,
+                                           const std::string& key) {
     const JsonValue& value = RequireObjectMember(object, key);
     if (!value.IsArray()) {
         throw std::runtime_error("JSON field is not an array: " + key);
@@ -372,7 +407,8 @@ struct ExecutionManagerPlatformConfig {
     int shutdown_grace_period_ms{1000};
 };
 
-std::vector<std::pair<std::string, std::string>> ParseEnvironmentVariables(const JsonValue::Array& array) {
+std::vector<std::pair<std::string, std::string>>
+ParseEnvironmentVariables(const JsonValue::Array& array) {
     std::vector<std::pair<std::string, std::string>> environment_variables;
     for (const JsonValue& value : array) {
         const auto& object = value.AsObject();
@@ -415,14 +451,12 @@ std::optional<std::string> FindExecutableReportingBehavior(const JsonValue::Arra
     return std::nullopt;
 }
 
-const JsonValue::Object& ResolveStartupConfig(
-    const JsonValue::Array& startup_configs,
-    const std::string& startup_config_ref) {
+const JsonValue::Object& ResolveStartupConfig(const JsonValue::Array& startup_configs,
+                                              const std::string& startup_config_ref) {
     const auto last_separator = startup_config_ref.find_last_of('/');
-    const std::string startup_config_name =
-        last_separator == std::string::npos
-            ? startup_config_ref
-            : startup_config_ref.substr(last_separator + 1U);
+    const std::string startup_config_name = last_separator == std::string::npos
+                                                ? startup_config_ref
+                                                : startup_config_ref.substr(last_separator + 1U);
 
     for (const JsonValue& value : startup_configs) {
         const auto& object = value.AsObject();
@@ -451,13 +485,11 @@ ExecutionManifest ParseProcessExecutionManifest(const JsonValue::Object& process
          RequireArrayMember(process_object, "stateDependentStartupConfigs")) {
         const auto& state_dependent_object = value.AsObject();
         const auto& startup_config_object = ResolveStartupConfig(
-            startup_configs,
-            RequireStringMember(state_dependent_object, "startupConfigRef"));
+            startup_configs, RequireStringMember(state_dependent_object, "startupConfigRef"));
 
         execution_manifest.state_dependent_startup_configs.push_back(StateDependentStartupConfig{
-            .function_group_states =
-                ParseFunctionGroupStates(
-                    RequireArrayMember(state_dependent_object, "functionGroupStates")),
+            .function_group_states = ParseFunctionGroupStates(
+                RequireArrayMember(state_dependent_object, "functionGroupStates")),
             .startup_config =
                 StartupConfig{
                     .process_arguments = ParseArguments(
@@ -473,9 +505,9 @@ ExecutionManifest ParseProcessExecutionManifest(const JsonValue::Object& process
     return execution_manifest;
 }
 
-std::vector<MachineProcess> LoadProcessesFromExecutionManifest(
-    const std::filesystem::path& manifest_path,
-    const std::filesystem::path& build_root) {
+std::vector<MachineProcess>
+LoadProcessesFromExecutionManifest(const std::filesystem::path& manifest_path,
+                                   const std::filesystem::path& build_root) {
     const JsonValue root = JsonParser(ReadTextFile(manifest_path)).Parse();
     const auto& root_object = root.AsObject();
     const auto& manifest_object = RequireObjectMember(root_object, "executionManifest").AsObject();
@@ -487,11 +519,8 @@ std::vector<MachineProcess> LoadProcessesFromExecutionManifest(
     machine_processes.reserve(processes.size());
     for (const JsonValue& value : processes) {
         const auto& process_object = value.AsObject();
-        ExecutionManifest execution_manifest = ParseProcessExecutionManifest(
-            process_object,
-            executables,
-            startup_configs,
-            build_root);
+        ExecutionManifest execution_manifest =
+            ParseProcessExecutionManifest(process_object, executables, startup_configs, build_root);
         machine_processes.push_back(MachineProcess{
             .name = execution_manifest.short_name,
             .execution_manifest = std::move(execution_manifest),
@@ -501,8 +530,8 @@ std::vector<MachineProcess> LoadProcessesFromExecutionManifest(
     return machine_processes;
 }
 
-ExecutionManagerPlatformConfig LoadExecutionManagerPlatformConfig(
-    const std::filesystem::path& manifest_path) {
+ExecutionManagerPlatformConfig
+LoadExecutionManagerPlatformConfig(const std::filesystem::path& manifest_path) {
     const JsonValue root = JsonParser(ReadTextFile(manifest_path)).Parse();
     const auto& root_object = root.AsObject();
     const auto& manifest_object = RequireObjectMember(root_object, "executionManifest").AsObject();
@@ -539,7 +568,8 @@ MachineManifest LoadMachineManifest(const std::filesystem::path& manifest_path,
          RequireArrayMember(machine_object, "functionGroups")) {
         const auto& function_group_object = function_group_value.AsObject();
         if (RequireStringMember(function_group_object, "name") == kManagedFunctionGroup) {
-            machine_manifest.initial_state = RequireStringMember(function_group_object, "initialState");
+            machine_manifest.initial_state =
+                RequireStringMember(function_group_object, "initialState");
             break;
         }
     }
@@ -553,7 +583,8 @@ MachineManifest LoadMachineManifest(const std::filesystem::path& manifest_path,
 bool HasMatchingStartupConfig(const MachineProcess& process, std::string_view machine_state) {
     for (const auto& config : process.execution_manifest.state_dependent_startup_configs) {
         for (const auto& selector : config.function_group_states) {
-            if (selector.function_group == kManagedFunctionGroup && selector.state == machine_state) {
+            if (selector.function_group == kManagedFunctionGroup &&
+                selector.state == machine_state) {
                 return true;
             }
         }
@@ -581,7 +612,9 @@ public:
           logger_(std::cout) {}
 
     int Run() {
-        logger_.Info("OPENAA", std::string("Open Adaptive AUTOSAR version: ") + OPEN_AA_VERSION); // OPEN_AA_VERSION is defined via compiler definition
+        logger_.Info("OPENAA",
+                     std::string("Open Adaptive AUTOSAR version: ") +
+                         OPEN_AA_VERSION); // OPEN_AA_VERSION is defined via compiler definition
 
         logger_.Info("OPENAA_EM", "Execution Manager starting up");
 
@@ -591,7 +624,8 @@ public:
                 LoadProcessesFromExecutionManifest(execution_manifest_path_, build_root_);
             platform_config_ = LoadExecutionManagerPlatformConfig(execution_manifest_path_);
         } catch (const std::exception& exception) {
-            logger_.Error("OPENAA_EM", std::string("Failed to load manifests: ") + exception.what());
+            logger_.Error("OPENAA_EM",
+                          std::string("Failed to load manifests: ") + exception.what());
             return EXIT_FAILURE;
         }
 
@@ -658,10 +692,9 @@ private:
     }
 
     bool SetupExecutionReportSocket() {
-        report_socket_path_ =
-            (std::filesystem::temp_directory_path() /
-             ("openaa_em_" + std::to_string(getpid()) + ".sock"))
-                .string();
+        report_socket_path_ = (std::filesystem::temp_directory_path() /
+                               ("openaa_em_" + std::to_string(getpid()) + ".sock"))
+                                  .string();
 
         report_socket_fd_ = socket(AF_UNIX, SOCK_DGRAM, 0);
         if (report_socket_fd_ == -1) {
@@ -673,7 +706,8 @@ private:
 
         sockaddr_un address{};
         address.sun_family = AF_UNIX;
-        std::snprintf(address.sun_path, sizeof(address.sun_path), "%s", report_socket_path_.c_str());
+        std::snprintf(
+            address.sun_path, sizeof(address.sun_path), "%s", report_socket_path_.c_str());
 
         unlink(report_socket_path_.c_str());
         if (bind(report_socket_fd_,
@@ -701,7 +735,8 @@ private:
             }
 
             if (!StartProcess(process)) {
-                logger_.Error("OPENAA_EM", std::string("Failed to start process '") + process.name + "'");
+                logger_.Error("OPENAA_EM",
+                              std::string("Failed to start process '") + process.name + "'");
             }
         }
     }
@@ -720,9 +755,10 @@ private:
                     arguments.insert(arguments.end(),
                                      config.startup_config.process_arguments.begin(),
                                      config.startup_config.process_arguments.end());
-                    environment_variables.insert(environment_variables.end(),
-                                                 config.startup_config.environment_variables.begin(),
-                                                 config.startup_config.environment_variables.end());
+                    environment_variables.insert(
+                        environment_variables.end(),
+                        config.startup_config.environment_variables.begin(),
+                        config.startup_config.environment_variables.end());
                 }
             }
         }
@@ -796,8 +832,7 @@ private:
 
     void HandleExecutionReport() {
         std::array<char, 512> buffer{};
-        const ssize_t bytes =
-            recv(report_socket_fd_, buffer.data(), buffer.size() - 1, 0);
+        const ssize_t bytes = recv(report_socket_fd_, buffer.data(), buffer.size() - 1, 0);
         if (bytes <= 0) {
             return;
         }
@@ -862,9 +897,8 @@ private:
             const int exit_code = exited_normally ? WEXITSTATUS(status) : -1;
             logger_.Info("OPENAA_EM",
                          std::string("Managed process '") + it->second.process.name + "' exited" +
-                             std::string(exited_normally
-                                             ? " with code " + std::to_string(exit_code)
-                                             : " due to signal"));
+                             std::string(exited_normally ? " with code " + std::to_string(exit_code)
+                                                         : " due to signal"));
             managed_processes_.erase(it);
         }
     }
@@ -873,8 +907,7 @@ private:
         const auto now = std::chrono::steady_clock::now();
         for (auto& [pid, managed_process] : managed_processes_) {
             (void)pid;
-            if (managed_process.running_reported ||
-                managed_process.reporting_timeout_logged ||
+            if (managed_process.running_reported || managed_process.reporting_timeout_logged ||
                 managed_process.process.execution_manifest.reporting_behavior !=
                     "REPORTS-EXECUTION-STATE") {
                 continue;
@@ -899,8 +932,7 @@ private:
 
         for (const auto& [pid, managed_process] : managed_processes_) {
             logger_.Info("OPENAA_EM",
-                         std::string("Sending SIGTERM to '") + managed_process.process.name +
-                             "'");
+                         std::string("Sending SIGTERM to '") + managed_process.process.name + "'");
             kill(pid, SIGTERM);
         }
 
@@ -958,9 +990,11 @@ int main(int argc, char* argv[]) {
         std::filesystem::weakly_canonical(std::filesystem::path(argv[0]));
     const std::filesystem::path build_root = ResolveBuildRoot(executable_path);
     const std::filesystem::path machine_manifest_path =
-        argc > 1 ? std::filesystem::path(argv[1]) : build_root / "manifests" / "machine_manifest.json";
+        argc > 1 ? std::filesystem::path(argv[1])
+                 : build_root / "manifests" / "machine_manifest.json";
     const std::filesystem::path execution_manifest_path =
-        argc > 2 ? std::filesystem::path(argv[2]) : build_root / "manifests" / "execution_manifest.json";
+        argc > 2 ? std::filesystem::path(argv[2])
+                 : build_root / "manifests" / "execution_manifest.json";
 
     ExecutionManager execution_manager(machine_manifest_path, execution_manifest_path, build_root);
     const int exit_code = execution_manager.Run();

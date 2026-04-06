@@ -2,11 +2,10 @@
 
 namespace ara::exec {
 
-FunctionGroupState::FunctionGroupState(
-    const FunctionGroup& function_group,
-    std::string_view state) noexcept
-    : function_group_(ara::core::InstanceSpecifier(function_group.GetInstanceSpecifier().View()))
-    , state_(state) {}
+FunctionGroupState::FunctionGroupState(const FunctionGroup& function_group,
+                                       std::string_view state) noexcept
+    : function_group_(ara::core::InstanceSpecifier(function_group.GetInstanceSpecifier().View())),
+      state_(state) {}
 
 bool FunctionGroupState::operator==(const FunctionGroupState& other) const noexcept {
     return function_group_ == other.function_group_ && state_ == other.state_;

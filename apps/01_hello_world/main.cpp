@@ -22,7 +22,8 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    if (!execution_client.Value().ReportExecutionState(ara::exec::ExecutionState::kRunning)
+    if (!execution_client.Value()
+             .ReportExecutionState(ara::exec::ExecutionState::kRunning)
              .HasValue()) {
         return 1;
     }
