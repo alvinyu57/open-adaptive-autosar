@@ -382,9 +382,11 @@ class ARXMLConverter:
         ns = self._make_namespace_map()
         configs = []
         
-        state_configs_container = root.find('.//ar:STATE-DEPENDENT-STARTUP-CONFIGS', ns)
-        if state_configs_container is None and process_elem is not None:
+        state_configs_container = None
+        if process_elem is not None:
             state_configs_container = process_elem.find('ar:STATE-DEPENDENT-STARTUP-CONFIGS', ns)
+        if state_configs_container is None:
+            state_configs_container = root.find('.//ar:STATE-DEPENDENT-STARTUP-CONFIGS', ns)
 
         if state_configs_container is not None:
             state_configs = state_configs_container.findall('ar:STATE-DEPENDENT-STARTUP-CONFIG', ns)

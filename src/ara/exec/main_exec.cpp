@@ -22,6 +22,7 @@
 #include <sys/types.h>
 #include <sys/un.h>
 #include <sys/wait.h>
+#include <sys/prctl.h>
 #include <unistd.h>
 #include <utility>
 #include <vector>
@@ -793,6 +794,15 @@ private:
         }
 
         if (child_pid == 0) {
+            // Ensure managed applications are terminated if Execution Manager exits unexpectedly.
+            if (prctl(PR_SET_PDEATHSIG, SIGTERM) != 0) {
+                _exit(127);
+            }
+
+            if (getppid() == 1) {
+                _exit(127);
+            }
+
             execve(process.execution_manifest.executable_path.c_str(), argv.data(), envp.data());
             _exit(127);
         }
@@ -945,6 +955,22 @@ private:
             HandleChildExit();
             if (!managed_processes_.empty()) {
                 std::this_thread::sleep_for(std::chrono::milliseconds(sleep_step_ms));
+            }
+        }
+
+        if (!managed_processes_.empty()) {
+            for (const auto& [pid, managed_process] : managed_processes_) {
+                logger_.Warn("OPENAA_EM",
+                             std::string("Process '") + managed_process.process.name +
+                                 "' did not terminate in time, sending SIGKILL");
+                kill(pid, SIGKILL);
+            }
+
+            for (int attempt = 0; attempt < max_attempts && !managed_processes_.empty(); ++attempt) {
+                HandleChildExit();
+                if (!managed_processes_.empty()) {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(sleep_step_ms));
+                }
             }
         }
 
