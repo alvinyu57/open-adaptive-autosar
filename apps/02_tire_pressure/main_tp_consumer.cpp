@@ -47,7 +47,9 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    if (!execution_client.Value().ReportExecutionState(ara::exec::ExecutionState::kRunning).HasValue()) {
+    if (!execution_client.Value()
+             .ReportExecutionState(ara::exec::ExecutionState::kRunning)
+             .HasValue()) {
         return 1;
     }
 
@@ -72,7 +74,8 @@ int main(int argc, char* argv[]) {
         }
 
         if (openaa::tire_pressure::HasLowTirePressure(*sample, 100)) {
-            logger.Warn("tire_consumer", std::string("LOW TIRE PRESSURE ALERT: ") + DescribeAlert(*sample));
+            logger.Warn("tire_consumer",
+                        std::string("LOW TIRE PRESSURE ALERT: ") + DescribeAlert(*sample));
             return;
         }
 

@@ -67,7 +67,9 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    if (!execution_client.Value().ReportExecutionState(ara::exec::ExecutionState::kRunning).HasValue()) {
+    if (!execution_client.Value()
+             .ReportExecutionState(ara::exec::ExecutionState::kRunning)
+             .HasValue()) {
         return 1;
     }
 
@@ -91,7 +93,8 @@ int main(int argc, char* argv[]) {
         }
 
         auto sample = sample_result.Value();
-        logger.Info("tire_provider", std::string("Loaded tire pressure data: ") + DescribeSample(sample));
+        logger.Info("tire_provider",
+                    std::string("Loaded tire pressure data: ") + DescribeSample(sample));
 
         sample.timestamp = std::chrono::system_clock::now();
         if (!skeleton.Publish(sample).HasValue()) {
@@ -100,7 +103,11 @@ int main(int argc, char* argv[]) {
         }
 
         logger.Info("tire_provider", "Published tire pressure sample over ara::com IPC:");
-        logger.Info("tire_provider", "{FL: " + std::to_string(sample.readings[0].pressure_kpa) + "kPa, FR: " + std::to_string(sample.readings[1].pressure_kpa) + "kPa, RL: " + std::to_string(sample.readings[2].pressure_kpa) + "kPa, RR: " + std::to_string(sample.readings[3].pressure_kpa) + "kPa }");
+        logger.Info("tire_provider",
+                    "{FL: " + std::to_string(sample.readings[0].pressure_kpa) +
+                        "kPa, FR: " + std::to_string(sample.readings[1].pressure_kpa) +
+                        "kPa, RL: " + std::to_string(sample.readings[2].pressure_kpa) +
+                        "kPa, RR: " + std::to_string(sample.readings[3].pressure_kpa) + "kPa }");
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 

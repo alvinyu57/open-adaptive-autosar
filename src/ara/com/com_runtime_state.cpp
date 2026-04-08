@@ -32,11 +32,10 @@ std::filesystem::path InstanceMappingPath(std::string_view instance_specifier) {
     return RegistryRoot() / "instances" / (Sanitize(instance_specifier) + ".map");
 }
 
-std::filesystem::path ServiceRecordPath(
-    std::string_view service_id,
-    std::string_view instance_identifier) {
-    return RegistryRoot() / "services"
-           / (Sanitize(service_id) + "__" + Sanitize(instance_identifier) + ".svc");
+std::filesystem::path ServiceRecordPath(std::string_view service_id,
+                                        std::string_view instance_identifier) {
+    return RegistryRoot() / "services" /
+           (Sanitize(service_id) + "__" + Sanitize(instance_identifier) + ".svc");
 }
 
 bool EnsureDirectory(const std::filesystem::path& path) {
@@ -110,23 +109,24 @@ public:
         }
 
         services_.emplace(key, record.metadata);
-        if (!WriteTextFile(
-                ServiceRecordPath(record.service_id.toString(), record.instance_identifier.toString()),
-                SerializeBindingMetadata(record.metadata))) {
+        if (!WriteTextFile(ServiceRecordPath(record.service_id.toString(),
+                                             record.instance_identifier.toString()),
+                           SerializeBindingMetadata(record.metadata))) {
             return ara::core::Result<void>{MakeErrorCode(ComErrc::kCommunicationFailure)};
         }
 
         return ara::core::Result<void>{};
     }
 
-    ara::core::Result<void> StopOfferService(
-        const ara::com::ServiceIdentifierType& service_id,
-        const ara::com::InstanceIdentifier& instance_identifier) noexcept override {
+    ara::core::Result<void>
+    StopOfferService(const ara::com::ServiceIdentifierType& service_id,
+                     const ara::com::InstanceIdentifier& instance_identifier) noexcept override {
         std::lock_guard<std::mutex> lock(mutex_);
 
         const ServiceKey key{service_id, instance_identifier};
         if (services_.erase(key) == 0U) {
-            const auto path = ServiceRecordPath(service_id.toString(), instance_identifier.toString());
+            const auto path =
+                ServiceRecordPath(service_id.toString(), instance_identifier.toString());
             std::error_code error_code;
             if (!std::filesystem::remove(path, error_code)) {
                 return ara::core::Result<void>{MakeErrorCode(ComErrc::kServiceNotOffered)};
@@ -136,14 +136,13 @@ public:
 
         std::error_code error_code;
         std::filesystem::remove(
-            ServiceRecordPath(service_id.toString(), instance_identifier.toString()),
-            error_code);
+            ServiceRecordPath(service_id.toString(), instance_identifier.toString()), error_code);
         return ara::core::Result<void>{};
     }
 
-    ara::core::Result<ara::core::Vector<BindingMetadata>> FindServices(
-        const ara::com::ServiceIdentifierType& service_id,
-        const ara::com::InstanceIdentifier& instance_identifier) noexcept override {
+    ara::core::Result<ara::core::Vector<BindingMetadata>>
+    FindServices(const ara::com::ServiceIdentifierType& service_id,
+                 const ara::com::InstanceIdentifier& instance_identifier) noexcept override {
         std::lock_guard<std::mutex> lock(mutex_);
 
         ara::core::Vector<BindingMetadata> matches;
@@ -180,10 +179,10 @@ ComRuntimeState& ComRuntimeState::Instance() noexcept {
     return instance;
 }
 
-ara::core::Result<void> ComRuntimeState::RegisterInstanceMapping(
-    const ara::core::InstanceSpecifier& instance_specifier,
-    const ara::com::InstanceIdentifier& instance_identifier,
-    const BindingMetadata& metadata) noexcept {
+ara::core::Result<void>
+ComRuntimeState::RegisterInstanceMapping(const ara::core::InstanceSpecifier& instance_specifier,
+                                         const ara::com::InstanceIdentifier& instance_identifier,
+                                         const BindingMetadata& metadata) noexcept {
     std::lock_guard<std::mutex> lock(mutex_);
 
     auto& mappings = instance_mappings_[std::string(instance_specifier.View())];
@@ -237,10 +236,10 @@ ara::core::Result<ara::com::InstanceIdentifierContainer> ComRuntimeState::Resolv
     return ara::core::Result<ara::com::InstanceIdentifierContainer>{std::move(result)};
 }
 
-ara::core::Result<void> ComRuntimeState::OfferService(
-    const ara::com::ServiceIdentifierType& service_id,
-    const ara::com::InstanceIdentifier& instance_identifier,
-    const BindingMetadata& metadata) noexcept {
+ara::core::Result<void>
+ComRuntimeState::OfferService(const ara::com::ServiceIdentifierType& service_id,
+                              const ara::com::InstanceIdentifier& instance_identifier,
+                              const BindingMetadata& metadata) noexcept {
     ServiceRecord record{
         service_id,
         instance_identifier,
@@ -262,9 +261,9 @@ ara::core::Result<void> ComRuntimeState::StopOfferService(
     return ara::core::Result<void>{MakeErrorCode(ComErrc::kServiceNotOffered)};
 }
 
-ara::core::Result<ara::core::Vector<BindingMetadata>> ComRuntimeState::FindServices(
-    const ara::com::ServiceIdentifierType& service_id,
-    const ara::com::InstanceIdentifier& instance_identifier) noexcept {
+ara::core::Result<ara::core::Vector<BindingMetadata>>
+ComRuntimeState::FindServices(const ara::com::ServiceIdentifierType& service_id,
+                              const ara::com::InstanceIdentifier& instance_identifier) noexcept {
     ara::core::Vector<BindingMetadata> matches;
     auto& ipc_runtime = GetOrCreateBindingRuntime(BindingType::kIpc);
     auto result = ipc_runtime.FindServices(service_id, instance_identifier);
@@ -284,9 +283,7 @@ IBindingRuntime& ComRuntimeState::GetOrCreateBindingRuntime(BindingType binding_
 
     auto iter = binding_runtimes_.find(binding_type);
     if (iter == binding_runtimes_.end()) {
-        iter = binding_runtimes_
-                   .emplace(binding_type, std::make_unique<IpcBindingRuntime>())
-                   .first;
+        iter = binding_runtimes_.emplace(binding_type, std::make_unique<IpcBindingRuntime>()).first;
     }
 
     return *iter->second;

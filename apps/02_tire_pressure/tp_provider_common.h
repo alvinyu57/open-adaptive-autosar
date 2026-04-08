@@ -43,7 +43,8 @@ inline ara::com::ServiceIdentifierType TirePressureServiceIdentifier() {
 }
 
 inline std::filesystem::path TirePressureSnapshotPath() {
-    return std::filesystem::temp_directory_path() / "openaa_ara_com" / "tire_pressure_snapshot.json";
+    return std::filesystem::temp_directory_path() / "openaa_ara_com" /
+           "tire_pressure_snapshot.json";
 }
 
 inline std::string ToIso8601(std::chrono::system_clock::time_point timestamp) {
@@ -67,8 +68,8 @@ inline std::string SerializeSample(const TirePressureSample& sample) {
 
     for (std::size_t index = 0; index < sample.readings.size(); ++index) {
         const auto& reading = sample.readings[index];
-        stream << "    {\"position\": \"" << reading.position << "\", \"pressureKPa\": "
-               << reading.pressure_kpa << "}";
+        stream << "    {\"position\": \"" << reading.position
+               << "\", \"pressureKPa\": " << reading.pressure_kpa << "}";
         if (index + 1U != sample.readings.size()) {
             stream << ',';
         }
@@ -103,7 +104,8 @@ inline std::optional<TirePressureSample> DeserializeSample(std::string_view text
     return sample;
 }
 
-inline ara::core::Result<TirePressureSample> LoadSampleFromJsonFile(const std::filesystem::path& file_path) noexcept {
+inline ara::core::Result<TirePressureSample>
+LoadSampleFromJsonFile(const std::filesystem::path& file_path) noexcept {
     std::ifstream input(file_path);
     if (!input.is_open()) {
         return ara::core::Result<TirePressureSample>{

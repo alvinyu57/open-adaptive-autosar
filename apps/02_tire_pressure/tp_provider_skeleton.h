@@ -19,7 +19,8 @@ public:
         auto mapping_result = ara::com::runtime::internal::RegisterInstanceMapping(
             instance_specifier,
             instance_identifier_,
-            {ara::com::runtime::internal::BindingType::kIpc, ara::core::String(endpoint_.string())});
+            {ara::com::runtime::internal::BindingType::kIpc,
+             ara::core::String(endpoint_.string())});
         if (!mapping_result.HasValue()) {
             return mapping_result;
         }
@@ -27,13 +28,13 @@ public:
         return ara::com::runtime::internal::OfferService(
             TirePressureServiceIdentifier(),
             instance_identifier_,
-            {ara::com::runtime::internal::BindingType::kIpc, ara::core::String(endpoint_.string())});
+            {ara::com::runtime::internal::BindingType::kIpc,
+             ara::core::String(endpoint_.string())});
     }
 
     ara::core::Result<void> StopOfferService() noexcept {
-        return ara::com::runtime::internal::StopOfferService(
-            TirePressureServiceIdentifier(),
-            instance_identifier_);
+        return ara::com::runtime::internal::StopOfferService(TirePressureServiceIdentifier(),
+                                                             instance_identifier_);
     }
 
     ara::core::Result<void> Publish(const TirePressureSample& sample) noexcept {

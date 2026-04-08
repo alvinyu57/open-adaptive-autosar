@@ -23,69 +23,24 @@ EOF
 
 check_calng_tidy() {
 
-    declare -a SOURCE_ROOTS=()
-
-    for candidate in src apps tests; do
-        if [ -d "${PROJECT_ROOT}/${candidate}" ]; then
-            SOURCE_ROOTS+=("${candidate}")
-        fi
-    done
-
-    if [ "${#SOURCE_ROOTS[@]}" -eq 0 ]; then
-        echo "No source roots found for clang-tidy."
-        exit 0
-    fi
-
-    if command -v rg >/dev/null 2>&1; then
-        mapfile -t SOURCE_FILES < <(
-            cd "${PROJECT_ROOT}" && \
-            rg --files "${SOURCE_ROOTS[@]}" \
-                -g '*.c' \
-                -g '*.cc' \
-                -g '*.cpp' \
-                -g '*.cxx' | \
-            sed "s|^|${PROJECT_ROOT}/|"
-        )
-    else
-        mapfile -t SOURCE_FILES < <(
-            find "${SOURCE_ROOTS[@]/#/${PROJECT_ROOT}/}" \
-                -type f \
-                \( -name '*.c' -o -name '*.cc' -o -name '*.cpp' -o -name '*.cxx' \) \
-                -printf '%p\n' \
-                | sort
-        )
-    fi
-
-    if [ "${#SOURCE_FILES[@]}" -eq 0 ]; then
-        echo "No source files found for clang-tidy."
-        exit 0
-    fi
-
     if [ ! -f "${BUILD_DIR}/compile_commands.json" ]; then
-        echo "Clang-tidy build directory not found. Configuring and generating compile_commands.json..."
-
-        ${PROJECT_ROOT}/scripts/build/build.sh --build-tests
-
-    else
-        echo "Clang-tidy build directory already configured."
+        echo "Generating compile_commands.json..."
+        "${PROJECT_ROOT}/scripts/build/build.sh" --build-tests
     fi
 
-    echo "Running clang-tidy on ${#SOURCE_FILES[@]} file(s)..."
-
-    mkdir -p ${OUTPUT_FILE_PATH}
+    mkdir -p "${OUTPUT_FILE_PATH}"
     OUTPUT_FILE="${OUTPUT_FILE_PATH}/clang-tidy-result.txt"
 
-    cd "${PROJECT_ROOT}"
+    if run-clang-tidy -p "${BUILD_DIR}" \
+        -header-filter=".*" \
+        -j "$(nproc)" \
+        "src/.*|apps/.*|tests/.*" > "${OUTPUT_FILE}" 2>&1; then
 
-    if clang-tidy -p "${BUILD_DIR}" "${SOURCE_FILES[@]}" > "${OUTPUT_FILE}" 2>&1; then
         echo "No violations found!"
-        echo "Report saved to: ${OUTPUT_FILE}"
-        exit 0
     else
-        echo "clang-tidy violations found!"
-        echo "Report saved to: ${OUTPUT_FILE}"
-        echo "Full violation report:"
+        echo "Violations found! Check: ${OUTPUT_FILE}"
         cat "${OUTPUT_FILE}"
+
         exit 1
     fi
 

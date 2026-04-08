@@ -19,12 +19,12 @@ public:
     virtual ~IBindingRuntime() = default;
 
     virtual ara::core::Result<void> OfferService(const ServiceRecord& record) noexcept = 0;
-    virtual ara::core::Result<void> StopOfferService(
-        const ara::com::ServiceIdentifierType& service_id,
-        const ara::com::InstanceIdentifier& instance_identifier) noexcept = 0;
-    virtual ara::core::Result<ara::core::Vector<BindingMetadata>> FindServices(
-        const ara::com::ServiceIdentifierType& service_id,
-        const ara::com::InstanceIdentifier& instance_identifier) noexcept = 0;
+    virtual ara::core::Result<void>
+    StopOfferService(const ara::com::ServiceIdentifierType& service_id,
+                     const ara::com::InstanceIdentifier& instance_identifier) noexcept = 0;
+    virtual ara::core::Result<ara::core::Vector<BindingMetadata>>
+    FindServices(const ara::com::ServiceIdentifierType& service_id,
+                 const ara::com::InstanceIdentifier& instance_identifier) noexcept = 0;
 };
 
 class ComRuntimeState final {
@@ -44,26 +44,25 @@ public:
 
     static ComRuntimeState& Instance() noexcept;
 
-    ara::core::Result<void> RegisterInstanceMapping(
-        const ara::core::InstanceSpecifier& instance_specifier,
-        const ara::com::InstanceIdentifier& instance_identifier,
-        const BindingMetadata& metadata) noexcept;
+    ara::core::Result<void>
+    RegisterInstanceMapping(const ara::core::InstanceSpecifier& instance_specifier,
+                            const ara::com::InstanceIdentifier& instance_identifier,
+                            const BindingMetadata& metadata) noexcept;
 
-    ara::core::Result<ara::com::InstanceIdentifierContainer> ResolveInstanceIDs(
-        const ara::core::InstanceSpecifier& instance_specifier) noexcept;
+    ara::core::Result<ara::com::InstanceIdentifierContainer>
+    ResolveInstanceIDs(const ara::core::InstanceSpecifier& instance_specifier) noexcept;
 
-    ara::core::Result<void> OfferService(
-        const ara::com::ServiceIdentifierType& service_id,
-        const ara::com::InstanceIdentifier& instance_identifier,
-        const BindingMetadata& metadata) noexcept;
+    ara::core::Result<void> OfferService(const ara::com::ServiceIdentifierType& service_id,
+                                         const ara::com::InstanceIdentifier& instance_identifier,
+                                         const BindingMetadata& metadata) noexcept;
 
-    ara::core::Result<void> StopOfferService(
-        const ara::com::ServiceIdentifierType& service_id,
-        const ara::com::InstanceIdentifier& instance_identifier) noexcept;
+    ara::core::Result<void>
+    StopOfferService(const ara::com::ServiceIdentifierType& service_id,
+                     const ara::com::InstanceIdentifier& instance_identifier) noexcept;
 
-    ara::core::Result<ara::core::Vector<BindingMetadata>> FindServices(
-        const ara::com::ServiceIdentifierType& service_id,
-        const ara::com::InstanceIdentifier& instance_identifier) noexcept;
+    ara::core::Result<ara::core::Vector<BindingMetadata>>
+    FindServices(const ara::com::ServiceIdentifierType& service_id,
+                 const ara::com::InstanceIdentifier& instance_identifier) noexcept;
 
 private:
     struct InstanceMapping final {

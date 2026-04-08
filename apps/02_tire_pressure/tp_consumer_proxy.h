@@ -25,25 +25,27 @@ public:
     }
 
     ara::core::Result<void> Connect() noexcept {
-        auto resolve_result = ara::com::runtime::ResolveInstanceIDs(TirePressureInstanceSpecifier());
+        auto resolve_result =
+            ara::com::runtime::ResolveInstanceIDs(TirePressureInstanceSpecifier());
         if (!resolve_result.HasValue()) {
             return ara::core::Result<void>{resolve_result.Error()};
         }
 
         if (resolve_result.Value().empty()) {
-            return ara::core::Result<void>{ara::com::MakeErrorCode(ara::com::ComErrc::kServiceNotAvailable)};
+            return ara::core::Result<void>{
+                ara::com::MakeErrorCode(ara::com::ComErrc::kServiceNotAvailable)};
         }
 
         instance_identifier_ = resolve_result.Value().front();
         auto find_result = ara::com::runtime::internal::FindServices(
-            TirePressureServiceIdentifier(),
-            *instance_identifier_);
+            TirePressureServiceIdentifier(), *instance_identifier_);
         if (!find_result.HasValue()) {
             return ara::core::Result<void>{find_result.Error()};
         }
 
         if (find_result.Value().empty()) {
-            return ara::core::Result<void>{ara::com::MakeErrorCode(ara::com::ComErrc::kServiceNotAvailable)};
+            return ara::core::Result<void>{
+                ara::com::MakeErrorCode(ara::com::ComErrc::kServiceNotAvailable)};
         }
 
         endpoint_ = find_result.Value().front().endpoint.View();
@@ -65,8 +67,10 @@ public:
                 std::error_code error_code;
                 const auto exists = std::filesystem::exists(endpoint_, error_code);
                 if (!error_code && exists) {
-                    const auto modified_time = std::filesystem::last_write_time(endpoint_, error_code);
-                    if (!error_code && (!last_modified_time_.has_value() || *last_modified_time_ != modified_time)) {
+                    const auto modified_time =
+                        std::filesystem::last_write_time(endpoint_, error_code);
+                    if (!error_code && (!last_modified_time_.has_value() ||
+                                        *last_modified_time_ != modified_time)) {
                         last_modified_time_ = modified_time;
                         if (LoadLatestSample()) {
                             handler();

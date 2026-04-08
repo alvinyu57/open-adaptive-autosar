@@ -966,7 +966,8 @@ private:
                 kill(pid, SIGKILL);
             }
 
-            for (int attempt = 0; attempt < max_attempts && !managed_processes_.empty(); ++attempt) {
+            for (int attempt = 0; attempt < max_attempts && !managed_processes_.empty();
+                 ++attempt) {
                 HandleChildExit();
                 if (!managed_processes_.empty()) {
                     std::this_thread::sleep_for(std::chrono::milliseconds(sleep_step_ms));
