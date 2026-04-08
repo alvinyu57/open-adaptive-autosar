@@ -34,6 +34,7 @@ check_calng_tidy() {
     if run-clang-tidy -p "${BUILD_DIR}" \
         -header-filter=".*" \
         -j "$(nproc)" \
+        -quiet \
         "src/.*|apps/.*|tests/.*" > "${OUTPUT_FILE}" 2>&1; then
 
         echo "No violations found!"

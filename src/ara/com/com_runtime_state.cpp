@@ -263,7 +263,7 @@ ara::core::Result<void> ComRuntimeState::StopOfferService(
 
 ara::core::Result<ara::core::Vector<BindingMetadata>>
 ComRuntimeState::FindServices(const ara::com::ServiceIdentifierType& service_id,
-                              const ara::com::InstanceIdentifier& instance_identifier) noexcept {
+                              const ara::com::InstanceIdentifier& instance_identifier) {
     ara::core::Vector<BindingMetadata> matches;
     auto& ipc_runtime = GetOrCreateBindingRuntime(BindingType::kIpc);
     auto result = ipc_runtime.FindServices(service_id, instance_identifier);

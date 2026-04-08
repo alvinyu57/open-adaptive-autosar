@@ -46,4 +46,5 @@ run-clang-tidy -p "${BUILD_DIR}" \
     -format \
     -header-filter=".*" \
     -j "$(nproc)" \
+    -quiet \
     "src/.*|apps/.*|tests/.*"

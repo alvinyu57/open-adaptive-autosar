@@ -62,7 +62,7 @@ public:
 
     ara::core::Result<ara::core::Vector<BindingMetadata>>
     FindServices(const ara::com::ServiceIdentifierType& service_id,
-                 const ara::com::InstanceIdentifier& instance_identifier) noexcept;
+                 const ara::com::InstanceIdentifier& instance_identifier);
 
 private:
     struct InstanceMapping final {
