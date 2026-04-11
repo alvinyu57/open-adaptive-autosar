@@ -8,6 +8,7 @@ set_target_properties(openaa_core_smoke_test PROPERTIES
 
 target_link_libraries(openaa_core_smoke_test
     PRIVATE
+        ara_com_lib
         ara_core_lib
         ara_exec_lib
 )

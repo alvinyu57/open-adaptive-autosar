@@ -89,6 +89,8 @@ class ARXMLConverter:
                 json_data = self._convert_machine_manifest(root)
             elif self.manifest_type == 'execution':
                 json_data = self._convert_execution_manifest(root)
+            elif self.manifest_type == 'service_instance':
+                json_data = self._convert_service_instance_manifest(root)
             else:
                 # Fallback generic conversion
                 json_data = self._generic_convert(root)
@@ -130,6 +132,9 @@ class ARXMLConverter:
                 return
 
         input_name = Path(self.input_file).name
+        if "service_instance_manifest" in input_name:
+            self.manifest_type = 'service_instance'
+            return
         if "execution_manifest" in input_name:
             self.manifest_type = 'execution'
             return
@@ -142,6 +147,66 @@ class ARXMLConverter:
             self.manifest_type = 'execution'
         else:
             self.manifest_type = 'generic'
+
+    def _convert_service_instance_manifest(self, root: ET.Element) -> Dict[str, Any]:
+        ns = self._make_namespace_map()
+
+        service_deployment = root.find('.//ar:USER-DEFINED-SERVICE-INTERFACE-DEPLOYMENT', ns)
+        provided_instance = root.find('.//ar:PROVIDED-USER-DEFINED-SERVICE-INSTANCE', ns)
+        required_instance = root.find('.//ar:REQUIRED-USER-DEFINED-SERVICE-INSTANCE', ns)
+
+        if service_deployment is None:
+            return {'serviceInstanceManifest': {}}
+
+        instance_element = provided_instance if provided_instance is not None else required_instance
+        request_response_deployment = None
+        fire_and_forget_deployment = None
+
+        for method_deployment in service_deployment.findall(
+                './ar:METHOD-DEPLOYMENTS/ar:USER-DEFINED-METHOD-DEPLOYMENT', ns):
+            communication_mode = self._get_admin_sd(
+                method_deployment, 'OPENAA', 'COMMUNICATION-MODE')
+            if communication_mode == 'REQUEST-RESPONSE':
+                request_response_deployment = method_deployment
+            elif communication_mode == 'FIRE-AND-FORGET':
+                fire_and_forget_deployment = method_deployment
+
+        event_deployment = service_deployment.find(
+            './ar:EVENT-DEPLOYMENTS/ar:USER-DEFINED-EVENT-DEPLOYMENT', ns)
+
+        service_interface_ref = self._get_text(service_deployment, 'ar:SERVICE-INTERFACE-REF')
+        event_ref = self._get_text(event_deployment, 'ar:EVENT-REF') if event_deployment is not None else ''
+        request_response_ref = self._get_text(
+            request_response_deployment, 'ar:METHOD-REF') if request_response_deployment is not None else ''
+        fire_and_forget_ref = self._get_text(
+            fire_and_forget_deployment, 'ar:METHOD-REF') if fire_and_forget_deployment is not None else ''
+
+        return {
+            'serviceInstanceManifest': {
+                'shortName': self._get_text(service_deployment, 'ar:SHORT-NAME'),
+                'serviceInterfaceRef': service_interface_ref,
+                'serviceIdentifier': self._get_admin_sd(
+                    service_deployment, 'OPENAA', 'SERVICE-IDENTIFIER'),
+                'transportBinding': self._get_admin_sd(
+                    service_deployment, 'OPENAA', 'TRANSPORT-BINDING'),
+                'instanceSpecifier': self._get_admin_sd(
+                    instance_element, 'OPENAA', 'INSTANCE-SPECIFIER') if instance_element is not None else '',
+                'instanceIdentifier': self._get_admin_sd(
+                    instance_element, 'OPENAA', 'INSTANCE-IDENTIFIER') if instance_element is not None else '',
+                'eventName': event_ref.split('/')[-1] if event_ref else self._get_text(
+                    event_deployment, 'ar:SHORT-NAME') if event_deployment is not None else '',
+                'eventChannel': self._get_admin_sd(
+                    event_deployment, 'OPENAA', 'CHANNEL') if event_deployment is not None else '',
+                'methodName': request_response_ref.split('/')[-1] if request_response_ref else self._get_text(
+                    request_response_deployment, 'ar:SHORT-NAME') if request_response_deployment is not None else '',
+                'methodChannel': self._get_admin_sd(
+                    request_response_deployment, 'OPENAA', 'CHANNEL') if request_response_deployment is not None else '',
+                'fireAndForgetName': fire_and_forget_ref.split('/')[-1] if fire_and_forget_ref else self._get_text(
+                    fire_and_forget_deployment, 'ar:SHORT-NAME') if fire_and_forget_deployment is not None else '',
+                'fireAndForgetChannel': self._get_admin_sd(
+                    fire_and_forget_deployment, 'OPENAA', 'CHANNEL') if fire_and_forget_deployment is not None else '',
+            }
+        }
     
     def _convert_machine_manifest(self, root: ET.Element) -> Dict[str, Any]:
         """
@@ -382,9 +447,11 @@ class ARXMLConverter:
         ns = self._make_namespace_map()
         configs = []
         
-        state_configs_container = root.find('.//ar:STATE-DEPENDENT-STARTUP-CONFIGS', ns)
-        if state_configs_container is None and process_elem is not None:
+        state_configs_container = None
+        if process_elem is not None:
             state_configs_container = process_elem.find('ar:STATE-DEPENDENT-STARTUP-CONFIGS', ns)
+        if state_configs_container is None:
+            state_configs_container = root.find('.//ar:STATE-DEPENDENT-STARTUP-CONFIGS', ns)
 
         if state_configs_container is not None:
             state_configs = state_configs_container.findall('ar:STATE-DEPENDENT-STARTUP-CONFIG', ns)
@@ -561,6 +628,22 @@ class ARXMLConverter:
             if value:
                 return value
         return default
+
+    def _get_admin_sd(
+            self,
+            element: Optional[ET.Element],
+            sdg_gid: str,
+            sd_gid: str,
+            default: str = '') -> str:
+        """Read an SD value from ADMIN-DATA/SDGS."""
+        if element is None:
+            return default
+
+        ns = self._make_namespace_map()
+        path = (
+            f"./ar:ADMIN-DATA/ar:SDGS/ar:SDG[@GID='{sdg_gid}']"
+            f"/ar:SD[@GID='{sd_gid}']")
+        return self._get_text(element, path, default)
     
     def _get_int(self, element: ET.Element, path: str) -> Optional[int]:
         """
