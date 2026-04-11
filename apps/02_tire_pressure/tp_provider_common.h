@@ -45,12 +45,13 @@ inline std::string SerializeMethodRequest(std::string_view command) {
     return std::string(command);
 }
 
-inline std::string SerializeFireAndForgetMessage(std::string_view command, std::string_view detail) {
+inline std::string SerializeFireAndForgetMessage(std::string_view command,
+                                                 std::string_view detail) {
     return std::string(command) + ":" + std::string(detail);
 }
 
-inline std::optional<std::pair<std::string, std::string>> DeserializeFireAndForgetMessage(
-    std::string_view payload) {
+inline std::optional<std::pair<std::string, std::string>>
+DeserializeFireAndForgetMessage(std::string_view payload) {
     const auto separator = payload.find(':');
     if (separator == std::string_view::npos) {
         return std::nullopt;

@@ -41,8 +41,7 @@ std::string SemaphoreName(std::string_view channel_name) {
     return SanitizeChannelName(channel_name) + "_sem";
 }
 
-template <typename Layout>
-class NamedSharedMemoryRegion final {
+template <typename Layout> class NamedSharedMemoryRegion final {
 public:
     explicit NamedSharedMemoryRegion(std::string_view channel_name) noexcept
         : name_(SanitizeChannelName(channel_name)) {
@@ -173,7 +172,8 @@ ara::core::Result<void> ValidatePayloadSize(std::string_view payload) noexcept {
 }
 
 template <typename Layout>
-ara::core::Result<Layout*> OpenRegion(std::string_view channel_name, NamedSharedMemoryRegion<Layout>& region) noexcept {
+ara::core::Result<Layout*> OpenRegion(std::string_view channel_name,
+                                      NamedSharedMemoryRegion<Layout>& region) noexcept {
     if (!region.IsOpen()) {
         return ara::core::Result<Layout*>{MakeErrorCode(ComErrc::kCommunicationFailure)};
     }
@@ -183,9 +183,8 @@ ara::core::Result<Layout*> OpenRegion(std::string_view channel_name, NamedShared
 
 } // namespace
 
-ara::core::Result<void> SharedMemoryEventChannel::Publish(
-    std::string_view channel_name,
-    std::string_view payload) noexcept {
+ara::core::Result<void> SharedMemoryEventChannel::Publish(std::string_view channel_name,
+                                                          std::string_view payload) noexcept {
     auto size_result = ValidatePayloadSize(payload);
     if (!size_result.HasValue()) {
         return size_result;
@@ -216,9 +215,9 @@ ara::core::Result<void> SharedMemoryEventChannel::Publish(
     return ara::core::Result<void>{};
 }
 
-ara::core::Result<std::optional<ara::core::String>> SharedMemoryEventChannel::ReadIfNew(
-    std::string_view channel_name,
-    std::uint64_t& last_seen_sequence) noexcept {
+ara::core::Result<std::optional<ara::core::String>>
+SharedMemoryEventChannel::ReadIfNew(std::string_view channel_name,
+                                    std::uint64_t& last_seen_sequence) noexcept {
     NamedSharedMemoryRegion<EventLayout> region(channel_name);
     auto region_result = OpenRegion(channel_name, region);
     if (!region_result.HasValue()) {
@@ -233,20 +232,21 @@ ara::core::Result<std::optional<ara::core::String>> SharedMemoryEventChannel::Re
 
     SemaphoreGuard guard(semaphore.Get());
     auto* layout = region_result.Value();
-    if (layout->magic != kEventMagic || layout->sequence == 0U || layout->sequence == last_seen_sequence) {
-        return ara::core::Result<std::optional<ara::core::String>>{std::optional<ara::core::String>{}};
+    if (layout->magic != kEventMagic || layout->sequence == 0U ||
+        layout->sequence == last_seen_sequence) {
+        return ara::core::Result<std::optional<ara::core::String>>{
+            std::optional<ara::core::String>{}};
     }
 
     last_seen_sequence = layout->sequence;
-    return ara::core::Result<std::optional<ara::core::String>>{
-        std::optional<ara::core::String>{
-            ara::core::String(std::string_view(layout->payload.data(), layout->payload_size))}};
+    return ara::core::Result<std::optional<ara::core::String>>{std::optional<ara::core::String>{
+        ara::core::String(std::string_view(layout->payload.data(), layout->payload_size))}};
 }
 
-ara::core::Result<ara::core::String> SharedMemoryMethodChannel::Call(
-    std::string_view channel_name,
-    std::string_view payload,
-    std::chrono::milliseconds timeout) noexcept {
+ara::core::Result<ara::core::String>
+SharedMemoryMethodChannel::Call(std::string_view channel_name,
+                                std::string_view payload,
+                                std::chrono::milliseconds timeout) noexcept {
     auto size_result = ValidatePayloadSize(payload);
     if (!size_result.HasValue()) {
         return ara::core::Result<ara::core::String>{size_result.Error()};
@@ -289,8 +289,8 @@ ara::core::Result<ara::core::String> SharedMemoryMethodChannel::Call(
             auto* layout = region_result.Value();
             if (layout->magic == kMethodMagic && layout->response_sequence > response_sequence &&
                 layout->response_correlation_id == correlation_id) {
-                return ara::core::Result<ara::core::String>{
-                    ara::core::String(std::string_view(layout->response_payload.data(), layout->response_size))};
+                return ara::core::Result<ara::core::String>{ara::core::String(
+                    std::string_view(layout->response_payload.data(), layout->response_size))};
             }
         }
 
@@ -300,9 +300,9 @@ ara::core::Result<ara::core::String> SharedMemoryMethodChannel::Call(
     return ara::core::Result<ara::core::String>{MakeErrorCode(ComErrc::kCommunicationFailure)};
 }
 
-ara::core::Result<std::optional<ChannelMessage>> SharedMemoryMethodChannel::TakeRequest(
-    std::string_view channel_name,
-    std::uint64_t& last_seen_sequence) noexcept {
+ara::core::Result<std::optional<ChannelMessage>>
+SharedMemoryMethodChannel::TakeRequest(std::string_view channel_name,
+                                       std::uint64_t& last_seen_sequence) noexcept {
     NamedSharedMemoryRegion<MethodLayout> region(channel_name);
     auto region_result = OpenRegion(channel_name, region);
     if (!region_result.HasValue()) {
@@ -311,7 +311,8 @@ ara::core::Result<std::optional<ChannelMessage>> SharedMemoryMethodChannel::Take
 
     NamedSemaphore semaphore(channel_name);
     if (!semaphore.IsOpen()) {
-        return ara::core::Result<std::optional<ChannelMessage>>{MakeErrorCode(ComErrc::kCommunicationFailure)};
+        return ara::core::Result<std::optional<ChannelMessage>>{
+            MakeErrorCode(ComErrc::kCommunicationFailure)};
     }
 
     SemaphoreGuard guard(semaphore.Get());
@@ -325,14 +326,14 @@ ara::core::Result<std::optional<ChannelMessage>> SharedMemoryMethodChannel::Take
     return ara::core::Result<std::optional<ChannelMessage>>{
         std::optional<ChannelMessage>{ChannelMessage{
             layout->correlation_id,
-            ara::core::String(std::string_view(layout->request_payload.data(), layout->request_size)),
+            ara::core::String(
+                std::string_view(layout->request_payload.data(), layout->request_size)),
         }}};
 }
 
-ara::core::Result<void> SharedMemoryMethodChannel::SendResponse(
-    std::string_view channel_name,
-    std::uint64_t correlation_id,
-    std::string_view payload) noexcept {
+ara::core::Result<void> SharedMemoryMethodChannel::SendResponse(std::string_view channel_name,
+                                                                std::uint64_t correlation_id,
+                                                                std::string_view payload) noexcept {
     auto size_result = ValidatePayloadSize(payload);
     if (!size_result.HasValue()) {
         return size_result;
@@ -364,9 +365,8 @@ ara::core::Result<void> SharedMemoryMethodChannel::SendResponse(
     return ara::core::Result<void>{};
 }
 
-ara::core::Result<void> SharedMemoryFireAndForgetChannel::Send(
-    std::string_view channel_name,
-    std::string_view payload) noexcept {
+ara::core::Result<void> SharedMemoryFireAndForgetChannel::Send(std::string_view channel_name,
+                                                               std::string_view payload) noexcept {
     auto size_result = ValidatePayloadSize(payload);
     if (!size_result.HasValue()) {
         return size_result;
@@ -397,9 +397,9 @@ ara::core::Result<void> SharedMemoryFireAndForgetChannel::Send(
     return ara::core::Result<void>{};
 }
 
-ara::core::Result<std::optional<ara::core::String>> SharedMemoryFireAndForgetChannel::Take(
-    std::string_view channel_name,
-    std::uint64_t& last_seen_sequence) noexcept {
+ara::core::Result<std::optional<ara::core::String>>
+SharedMemoryFireAndForgetChannel::Take(std::string_view channel_name,
+                                       std::uint64_t& last_seen_sequence) noexcept {
     NamedSharedMemoryRegion<OneWayLayout> region(channel_name);
     auto region_result = OpenRegion(channel_name, region);
     if (!region_result.HasValue()) {
@@ -414,14 +414,15 @@ ara::core::Result<std::optional<ara::core::String>> SharedMemoryFireAndForgetCha
 
     SemaphoreGuard guard(semaphore.Get());
     auto* layout = region_result.Value();
-    if (layout->magic != kOneWayMagic || layout->sequence == 0U || layout->sequence == last_seen_sequence) {
-        return ara::core::Result<std::optional<ara::core::String>>{std::optional<ara::core::String>{}};
+    if (layout->magic != kOneWayMagic || layout->sequence == 0U ||
+        layout->sequence == last_seen_sequence) {
+        return ara::core::Result<std::optional<ara::core::String>>{
+            std::optional<ara::core::String>{}};
     }
 
     last_seen_sequence = layout->sequence;
-    return ara::core::Result<std::optional<ara::core::String>>{
-        std::optional<ara::core::String>{
-            ara::core::String(std::string_view(layout->payload.data(), layout->payload_size))}};
+    return ara::core::Result<std::optional<ara::core::String>>{std::optional<ara::core::String>{
+        ara::core::String(std::string_view(layout->payload.data(), layout->payload_size))}};
 }
 
 } // namespace ara::com::runtime::internal

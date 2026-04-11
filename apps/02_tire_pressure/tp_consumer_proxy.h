@@ -23,8 +23,7 @@ public:
     }
 
     ara::core::Result<void> Connect() noexcept {
-        auto resolve_result =
-            ara::com::runtime::ResolveInstanceIDs(manifest_.instance_specifier);
+        auto resolve_result = ara::com::runtime::ResolveInstanceIDs(manifest_.instance_specifier);
         if (resolve_result.HasValue() && !resolve_result.Value().empty()) {
             instance_identifier_ = resolve_result.Value().front();
         } else {
@@ -32,9 +31,8 @@ public:
             return ara::core::Result<void>{};
         }
 
-        auto find_result = ara::com::runtime::internal::FindServices(
-            manifest_.service_identifier,
-            *instance_identifier_);
+        auto find_result = ara::com::runtime::internal::FindServices(manifest_.service_identifier,
+                                                                     *instance_identifier_);
         if (!find_result.HasValue() || find_result.Value().empty()) {
             instance_identifier_ = manifest_.instance_identifier;
             return ara::core::Result<void>{};
@@ -56,8 +54,7 @@ public:
         receiver_thread_ = std::thread([this, handler = std::move(handler)]() mutable {
             while (running_.load()) {
                 auto event_result = ara::com::runtime::internal::GetNewEvent(
-                    manifest_.event_channel,
-                    last_event_sequence_);
+                    manifest_.event_channel, last_event_sequence_);
                 if (event_result.HasValue() && event_result.Value().has_value()) {
                     auto sample = DeserializeSample(event_result.Value()->View());
                     if (sample.has_value()) {
@@ -93,10 +90,10 @@ public:
     }
 
     ara::core::Result<TirePressureSample> GetLatestByRequest() noexcept {
-        auto response_result = ara::com::runtime::internal::CallMethod(
-            manifest_.method_channel,
-            SerializeMethodRequest("GetLatestPressure"),
-            std::chrono::milliseconds(500));
+        auto response_result =
+            ara::com::runtime::internal::CallMethod(manifest_.method_channel,
+                                                    SerializeMethodRequest("GetLatestPressure"),
+                                                    std::chrono::milliseconds(500));
         if (!response_result.HasValue()) {
             return ara::core::Result<TirePressureSample>{response_result.Error()};
         }

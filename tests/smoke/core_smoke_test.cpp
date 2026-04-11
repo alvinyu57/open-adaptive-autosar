@@ -120,9 +120,7 @@ int main() {
     std::optional<ara::core::Result<ara::core::String>> method_response;
     std::thread method_caller([&]() {
         method_response = ara::com::runtime::internal::CallMethod(
-            method_channel,
-            "GetLatestPressure",
-            std::chrono::milliseconds(1000));
+            method_channel, "GetLatestPressure", std::chrono::milliseconds(1000));
     });
 
     std::optional<ara::com::runtime::internal::ChannelMessage> method_request;
@@ -147,9 +145,7 @@ int main() {
     }
 
     auto send_response_result = ara::com::runtime::internal::SendMethodResponse(
-        method_channel,
-        method_request->correlation_id,
-        R"({"pressureKPa":96})");
+        method_channel, method_request->correlation_id, R"({"pressureKPa":96})");
     if (!send_response_result.HasValue()) {
         std::cerr << "Failed to send ara::com method response" << std::endl;
         method_caller.join();
@@ -165,8 +161,7 @@ int main() {
 
     std::uint64_t last_one_way_sequence{0U};
     auto send_one_way_result = ara::com::runtime::internal::SendFireAndForget(
-        one_way_channel,
-        "LowPressureAlarm:front_left=96");
+        one_way_channel, "LowPressureAlarm:front_left=96");
     if (!send_one_way_result.HasValue()) {
         std::cerr << "Failed to send ara::com fire-and-forget message" << std::endl;
         return 1;

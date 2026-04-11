@@ -24,8 +24,8 @@ struct TirePressureServiceManifest final {
     std::string fire_and_forget_channel;
 };
 
-inline ara::core::Result<TirePressureServiceManifest> LoadServiceManifest(
-    const std::string& manifest_path) noexcept {
+inline ara::core::Result<TirePressureServiceManifest>
+LoadServiceManifest(const std::string& manifest_path) noexcept {
     std::ifstream input(manifest_path);
     if (!input.is_open()) {
         return ara::core::Result<TirePressureServiceManifest>{
@@ -36,16 +36,11 @@ inline ara::core::Result<TirePressureServiceManifest> LoadServiceManifest(
     buffer << input.rdbuf();
     const std::string json = buffer.str();
 
-    const std::regex instance_specifier_pattern(
-        R"re("instanceSpecifier"\s*:\s*"([^"]+)")re");
-    const std::regex instance_identifier_pattern(
-        R"re("instanceIdentifier"\s*:\s*"([^"]+)")re");
-    const std::regex service_identifier_pattern(
-        R"re("serviceIdentifier"\s*:\s*"([^"]+)")re");
-    const std::regex event_channel_pattern(
-        R"re("eventChannel"\s*:\s*"([^"]+)")re");
-    const std::regex method_channel_pattern(
-        R"re("methodChannel"\s*:\s*"([^"]+)")re");
+    const std::regex instance_specifier_pattern(R"re("instanceSpecifier"\s*:\s*"([^"]+)")re");
+    const std::regex instance_identifier_pattern(R"re("instanceIdentifier"\s*:\s*"([^"]+)")re");
+    const std::regex service_identifier_pattern(R"re("serviceIdentifier"\s*:\s*"([^"]+)")re");
+    const std::regex event_channel_pattern(R"re("eventChannel"\s*:\s*"([^"]+)")re");
+    const std::regex method_channel_pattern(R"re("methodChannel"\s*:\s*"([^"]+)")re");
     const std::regex fire_and_forget_channel_pattern(
         R"re("fireAndForgetChannel"\s*:\s*"([^"]+)")re");
 

@@ -100,9 +100,7 @@ TEST(ComRuntimeTest, CompletesSharedMemoryRequestResponseRoundTrip) {
 
     auto future = std::async(std::launch::async, [&channel_name]() {
         return ara::com::runtime::internal::CallMethod(
-            channel_name,
-            "GetLatestPressure",
-            std::chrono::milliseconds(1000));
+            channel_name, "GetLatestPressure", std::chrono::milliseconds(1000));
     });
 
     std::optional<ara::com::runtime::internal::ChannelMessage> request;
@@ -120,9 +118,7 @@ TEST(ComRuntimeTest, CompletesSharedMemoryRequestResponseRoundTrip) {
     EXPECT_EQ(request->payload.View(), "GetLatestPressure");
 
     auto response_result = ara::com::runtime::internal::SendMethodResponse(
-        channel_name,
-        request->correlation_id,
-        R"({"pressureKPa":101})");
+        channel_name, request->correlation_id, R"({"pressureKPa":101})");
     ASSERT_TRUE(response_result.HasValue());
 
     auto call_result = future.get();
@@ -134,8 +130,8 @@ TEST(ComRuntimeTest, SendsAndReceivesSharedMemoryFireAndForgetMessages) {
     const auto channel_name = UniqueName("ara_com_oneway");
     std::uint64_t last_seen_sequence{0U};
 
-    auto send_result =
-        ara::com::runtime::internal::SendFireAndForget(channel_name, "LowPressureAlarm:front_left=98");
+    auto send_result = ara::com::runtime::internal::SendFireAndForget(
+        channel_name, "LowPressureAlarm:front_left=98");
     ASSERT_TRUE(send_result.HasValue());
 
     auto take_result =

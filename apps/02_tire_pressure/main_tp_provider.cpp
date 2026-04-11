@@ -121,7 +121,8 @@ int main(int argc, char* argv[]) {
                             *one_way_result.Value());
         }
 
-        logger.Info("tire_provider", "Published tire pressure sample over ara::com shared memory IPC:");
+        logger.Info("tire_provider",
+                    "Published tire pressure sample over ara::com shared memory IPC:");
         logger.Info("tire_provider",
                     "{FL: " + std::to_string(sample.readings[0].pressure_kpa) +
                         "kPa, FR: " + std::to_string(sample.readings[1].pressure_kpa) +

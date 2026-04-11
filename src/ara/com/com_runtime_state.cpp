@@ -186,8 +186,7 @@ RegistrySemaphore& GetRegistrySemaphore() {
     return semaphore;
 }
 
-template <typename Entry>
-BindingMetadata ToBindingMetadata(const Entry& entry) {
+template <typename Entry> BindingMetadata ToBindingMetadata(const Entry& entry) {
     return BindingMetadata{
         static_cast<BindingType>(entry.binding_type),
         ara::core::String(ViewString(entry.endpoint)),
@@ -212,8 +211,7 @@ public:
         SemaphoreGuard guard(semaphore.Get());
         auto* layout = registry_result.Value();
         for (auto& entry : layout->services) {
-            if (entry.in_use &&
-                ViewString(entry.service_id) == record.service_id.toString() &&
+            if (entry.in_use && ViewString(entry.service_id) == record.service_id.toString() &&
                 ViewString(entry.instance_identifier) == record.instance_identifier.toString()) {
                 entry.binding_type = static_cast<std::uint32_t>(record.metadata.binding_type);
                 if (!CopyString(entry.endpoint, record.metadata.endpoint.View())) {
@@ -242,9 +240,9 @@ public:
         return ara::core::Result<void>{MakeErrorCode(ComErrc::kMaxSamplesExceeded)};
     }
 
-    ara::core::Result<void> StopOfferService(
-        const ara::com::ServiceIdentifierType& service_id,
-        const ara::com::InstanceIdentifier& instance_identifier) noexcept override {
+    ara::core::Result<void>
+    StopOfferService(const ara::com::ServiceIdentifierType& service_id,
+                     const ara::com::InstanceIdentifier& instance_identifier) noexcept override {
         auto registry_result = OpenRegistry();
         if (!registry_result.HasValue()) {
             return ara::core::Result<void>{registry_result.Error()};
@@ -258,8 +256,7 @@ public:
         SemaphoreGuard guard(semaphore.Get());
         auto* layout = registry_result.Value();
         for (auto& entry : layout->services) {
-            if (entry.in_use &&
-                ViewString(entry.service_id) == service_id.toString() &&
+            if (entry.in_use && ViewString(entry.service_id) == service_id.toString() &&
                 ViewString(entry.instance_identifier) == instance_identifier.toString()) {
                 entry = RegistryServiceEntry{};
                 return ara::core::Result<void>{};
@@ -269,9 +266,9 @@ public:
         return ara::core::Result<void>{MakeErrorCode(ComErrc::kServiceNotOffered)};
     }
 
-    ara::core::Result<ara::core::Vector<BindingMetadata>> FindServices(
-        const ara::com::ServiceIdentifierType& service_id,
-        const ara::com::InstanceIdentifier& instance_identifier) noexcept override {
+    ara::core::Result<ara::core::Vector<BindingMetadata>>
+    FindServices(const ara::com::ServiceIdentifierType& service_id,
+                 const ara::com::InstanceIdentifier& instance_identifier) noexcept override {
         auto registry_result = OpenRegistry();
         if (!registry_result.HasValue()) {
             return ara::core::Result<ara::core::Vector<BindingMetadata>>{registry_result.Error()};
@@ -305,10 +302,10 @@ ComRuntimeState& ComRuntimeState::Instance() noexcept {
     return instance;
 }
 
-ara::core::Result<void> ComRuntimeState::RegisterInstanceMapping(
-    const ara::core::InstanceSpecifier& instance_specifier,
-    const ara::com::InstanceIdentifier& instance_identifier,
-    const BindingMetadata& metadata) noexcept {
+ara::core::Result<void>
+ComRuntimeState::RegisterInstanceMapping(const ara::core::InstanceSpecifier& instance_specifier,
+                                         const ara::com::InstanceIdentifier& instance_identifier,
+                                         const BindingMetadata& metadata) noexcept {
     auto registry_result = OpenRegistry();
     if (!registry_result.HasValue()) {
         return ara::core::Result<void>{registry_result.Error()};
@@ -322,8 +319,7 @@ ara::core::Result<void> ComRuntimeState::RegisterInstanceMapping(
     SemaphoreGuard guard(semaphore.Get());
     auto* layout = registry_result.Value();
     for (auto& entry : layout->instances) {
-        if (entry.in_use &&
-            ViewString(entry.instance_specifier) == instance_specifier.View()) {
+        if (entry.in_use && ViewString(entry.instance_specifier) == instance_specifier.View()) {
             entry.binding_type = static_cast<std::uint32_t>(metadata.binding_type);
             if (!CopyString(entry.instance_identifier, instance_identifier.toString()) ||
                 !CopyString(entry.endpoint, metadata.endpoint.View())) {
@@ -371,7 +367,8 @@ ara::core::Result<ara::com::InstanceIdentifierContainer> ComRuntimeState::Resolv
             continue;
         }
         if (ViewString(entry.instance_specifier) == instance_specifier.View()) {
-            result.push_back(ara::com::InstanceIdentifier::Create(ViewString(entry.instance_identifier)));
+            result.push_back(
+                ara::com::InstanceIdentifier::Create(ViewString(entry.instance_identifier)));
         }
     }
 
@@ -383,10 +380,10 @@ ara::core::Result<ara::com::InstanceIdentifierContainer> ComRuntimeState::Resolv
     return ara::core::Result<ara::com::InstanceIdentifierContainer>{std::move(result)};
 }
 
-ara::core::Result<void> ComRuntimeState::OfferService(
-    const ara::com::ServiceIdentifierType& service_id,
-    const ara::com::InstanceIdentifier& instance_identifier,
-    const BindingMetadata& metadata) noexcept {
+ara::core::Result<void>
+ComRuntimeState::OfferService(const ara::com::ServiceIdentifierType& service_id,
+                              const ara::com::InstanceIdentifier& instance_identifier,
+                              const BindingMetadata& metadata) noexcept {
     ServiceRecord record{service_id, instance_identifier, metadata};
     return GetOrCreateBindingRuntime(metadata.binding_type).OfferService(record);
 }
@@ -398,9 +395,9 @@ ara::core::Result<void> ComRuntimeState::StopOfferService(
     return ipc_runtime.StopOfferService(service_id, instance_identifier);
 }
 
-ara::core::Result<ara::core::Vector<BindingMetadata>> ComRuntimeState::FindServices(
-    const ara::com::ServiceIdentifierType& service_id,
-    const ara::com::InstanceIdentifier& instance_identifier) {
+ara::core::Result<ara::core::Vector<BindingMetadata>>
+ComRuntimeState::FindServices(const ara::com::ServiceIdentifierType& service_id,
+                              const ara::com::InstanceIdentifier& instance_identifier) {
     auto& ipc_runtime = GetOrCreateBindingRuntime(BindingType::kIpc);
     return ipc_runtime.FindServices(service_id, instance_identifier);
 }
