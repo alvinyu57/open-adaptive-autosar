@@ -9,6 +9,7 @@
 #include "ara/log/logger.hpp"
 #include "tp_consumer_common.h"
 #include "tp_consumer_proxy.h"
+#include "tp_service_manifest.h"
 
 namespace {
 
@@ -53,7 +54,14 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    openaa::tire_pressure::TirePressureConsumerProxy proxy;
+    auto manifest_result =
+        openaa::tire_pressure::LoadServiceManifest(OPEN_AA_TIRE_PRESSURE_SERVICE_MANIFEST);
+    if (!manifest_result.HasValue()) {
+        logger.Error("tire_consumer", "Failed to load service_instance_manifest.arxml");
+        return 1;
+    }
+
+    openaa::tire_pressure::TirePressureConsumerProxy proxy(manifest_result.Value());
     bool connected = false;
     for (int attempt = 0; attempt < 20 && keep_running.load(); ++attempt) {
         if (proxy.Connect().HasValue()) {
@@ -73,9 +81,15 @@ int main(int argc, char* argv[]) {
             return;
         }
 
+        auto request_result = proxy.GetLatestByRequest();
+        if (!request_result.HasValue()) {
+            logger.Warn("tire_consumer", "Request/response validation failed");
+        }
+
         if (openaa::tire_pressure::HasLowTirePressure(*sample, 100)) {
             logger.Warn("tire_consumer",
                         std::string("LOW TIRE PRESSURE ALERT: ") + DescribeAlert(*sample));
+            (void)proxy.SendLowPressureAlarm(DescribeAlert(*sample));
             return;
         }
 

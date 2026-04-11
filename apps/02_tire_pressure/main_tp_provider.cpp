@@ -10,6 +10,7 @@
 #include "ara/log/logger.hpp"
 #include "tp_provider_common.h"
 #include "tp_provider_skeleton.h"
+#include "tp_service_manifest.h"
 
 namespace {
 
@@ -73,7 +74,14 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    openaa::tire_pressure::TirePressureProviderSkeleton skeleton;
+    auto manifest_result =
+        openaa::tire_pressure::LoadServiceManifest(OPEN_AA_TIRE_PRESSURE_SERVICE_MANIFEST);
+    if (!manifest_result.HasValue()) {
+        logger.Error("tire_provider", "Failed to load service_instance_manifest.arxml");
+        return 1;
+    }
+
+    openaa::tire_pressure::TirePressureProviderSkeleton skeleton(manifest_result.Value());
     if (!skeleton.OfferService().HasValue()) {
         logger.Error("tire_provider", "Failed to offer tire pressure service");
         return 1;
@@ -102,13 +110,24 @@ int main(int argc, char* argv[]) {
             break;
         }
 
-        logger.Info("tire_provider", "Published tire pressure sample over ara::com IPC:");
+        if (!skeleton.ProcessNextMethodCall().HasValue()) {
+            logger.Warn("tire_provider", "Failed to process request/response call");
+        }
+
+        auto one_way_result = skeleton.ProcessNextFireAndForget();
+        if (one_way_result.HasValue() && one_way_result.Value().has_value()) {
+            logger.Warn("tire_provider",
+                        std::string("Received fire-and-forget notification: ") +
+                            *one_way_result.Value());
+        }
+
+        logger.Info("tire_provider", "Published tire pressure sample over ara::com shared memory IPC:");
         logger.Info("tire_provider",
                     "{FL: " + std::to_string(sample.readings[0].pressure_kpa) +
                         "kPa, FR: " + std::to_string(sample.readings[1].pressure_kpa) +
                         "kPa, RL: " + std::to_string(sample.readings[2].pressure_kpa) +
                         "kPa, RR: " + std::to_string(sample.readings[3].pressure_kpa) + "kPa }");
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        std::this_thread::sleep_for(std::chrono::milliseconds(250));
     }
 
     (void)skeleton.StopOfferService();

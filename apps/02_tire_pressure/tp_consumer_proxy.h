@@ -2,11 +2,8 @@
 
 #include <atomic>
 #include <chrono>
-#include <filesystem>
-#include <fstream>
 #include <mutex>
 #include <optional>
-#include <sstream>
 #include <thread>
 
 #include "ara/com/runtime.h"
@@ -18,7 +15,8 @@ namespace openaa::tire_pressure {
 
 class TirePressureConsumerProxy final {
 public:
-    TirePressureConsumerProxy() = default;
+    explicit TirePressureConsumerProxy(TirePressureServiceManifest manifest)
+        : manifest_(std::move(manifest)) {}
 
     ~TirePressureConsumerProxy() {
         StopSubscription();
@@ -26,34 +24,27 @@ public:
 
     ara::core::Result<void> Connect() noexcept {
         auto resolve_result =
-            ara::com::runtime::ResolveInstanceIDs(TirePressureInstanceSpecifier());
-        if (!resolve_result.HasValue()) {
-            return ara::core::Result<void>{resolve_result.Error()};
+            ara::com::runtime::ResolveInstanceIDs(manifest_.instance_specifier);
+        if (resolve_result.HasValue() && !resolve_result.Value().empty()) {
+            instance_identifier_ = resolve_result.Value().front();
+        } else {
+            instance_identifier_ = manifest_.instance_identifier;
+            return ara::core::Result<void>{};
         }
 
-        if (resolve_result.Value().empty()) {
-            return ara::core::Result<void>{
-                ara::com::MakeErrorCode(ara::com::ComErrc::kServiceNotAvailable)};
-        }
-
-        instance_identifier_ = resolve_result.Value().front();
         auto find_result = ara::com::runtime::internal::FindServices(
-            TirePressureServiceIdentifier(), *instance_identifier_);
-        if (!find_result.HasValue()) {
-            return ara::core::Result<void>{find_result.Error()};
+            manifest_.service_identifier,
+            *instance_identifier_);
+        if (!find_result.HasValue() || find_result.Value().empty()) {
+            instance_identifier_ = manifest_.instance_identifier;
+            return ara::core::Result<void>{};
         }
 
-        if (find_result.Value().empty()) {
-            return ara::core::Result<void>{
-                ara::com::MakeErrorCode(ara::com::ComErrc::kServiceNotAvailable)};
-        }
-
-        endpoint_ = find_result.Value().front().endpoint.View();
         return ara::core::Result<void>{};
     }
 
     ara::core::Result<void> Subscribe(ara::com::TriggerReceiveHandler handler) noexcept {
-        if (!instance_identifier_.has_value() || endpoint_.empty()) {
+        if (!instance_identifier_.has_value()) {
             auto connect_result = Connect();
             if (!connect_result.HasValue()) {
                 return connect_result;
@@ -64,21 +55,21 @@ public:
         running_.store(true);
         receiver_thread_ = std::thread([this, handler = std::move(handler)]() mutable {
             while (running_.load()) {
-                std::error_code error_code;
-                const auto exists = std::filesystem::exists(endpoint_, error_code);
-                if (!error_code && exists) {
-                    const auto modified_time =
-                        std::filesystem::last_write_time(endpoint_, error_code);
-                    if (!error_code && (!last_modified_time_.has_value() ||
-                                        *last_modified_time_ != modified_time)) {
-                        last_modified_time_ = modified_time;
-                        if (LoadLatestSample()) {
-                            handler();
+                auto event_result = ara::com::runtime::internal::GetNewEvent(
+                    manifest_.event_channel,
+                    last_event_sequence_);
+                if (event_result.HasValue() && event_result.Value().has_value()) {
+                    auto sample = DeserializeSample(event_result.Value()->View());
+                    if (sample.has_value()) {
+                        {
+                            std::lock_guard<std::mutex> lock(mutex_);
+                            cached_sample_ = std::move(sample);
                         }
+                        handler();
                     }
                 }
 
-                std::this_thread::sleep_for(std::chrono::milliseconds(200));
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
             }
         });
 
@@ -101,32 +92,38 @@ public:
         return ara::com::SamplePtr<TirePressureSample>(new TirePressureSample(*cached_sample_));
     }
 
-private:
-    bool LoadLatestSample() noexcept {
-        std::ifstream input(endpoint_);
-        if (!input.is_open()) {
-            return false;
+    ara::core::Result<TirePressureSample> GetLatestByRequest() noexcept {
+        auto response_result = ara::com::runtime::internal::CallMethod(
+            manifest_.method_channel,
+            SerializeMethodRequest("GetLatestPressure"),
+            std::chrono::milliseconds(500));
+        if (!response_result.HasValue()) {
+            return ara::core::Result<TirePressureSample>{response_result.Error()};
         }
 
-        std::ostringstream buffer;
-        buffer << input.rdbuf();
-        auto sample = DeserializeSample(buffer.str());
+        auto sample = DeserializeSample(response_result.Value().View());
         if (!sample.has_value()) {
-            return false;
+            return ara::core::Result<TirePressureSample>{
+                ara::core::MakeErrorCode(ara::core::CoreErrc::kInvalidState)};
         }
 
-        std::lock_guard<std::mutex> lock(mutex_);
-        cached_sample_ = std::move(sample);
-        return true;
+        return ara::core::Result<TirePressureSample>{std::move(*sample)};
     }
 
+    ara::core::Result<void> SendLowPressureAlarm(std::string_view detail) noexcept {
+        return ara::com::runtime::internal::SendFireAndForget(
+            manifest_.fire_and_forget_channel,
+            SerializeFireAndForgetMessage("LowPressureAlarm", detail));
+    }
+
+private:
+    TirePressureServiceManifest manifest_;
     std::optional<ara::com::InstanceIdentifier> instance_identifier_;
-    std::filesystem::path endpoint_;
     std::atomic<bool> running_{false};
     std::thread receiver_thread_;
     mutable std::mutex mutex_;
     std::optional<TirePressureSample> cached_sample_;
-    std::optional<std::filesystem::file_time_type> last_modified_time_;
+    std::uint64_t last_event_sequence_{0U};
 };
 
 } // namespace openaa::tire_pressure

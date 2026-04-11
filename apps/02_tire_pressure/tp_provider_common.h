@@ -12,11 +12,9 @@
 #include <string_view>
 #include <vector>
 
-#include "ara/com/service/instance_identifier.h"
-#include "ara/com/service/service_identifier.h"
 #include "ara/core/core_error_domain.h"
-#include "ara/core/instance_specifier.h"
 #include "ara/core/result.h"
+#include "tp_service_manifest.h"
 
 namespace openaa::tire_pressure {
 
@@ -30,23 +28,6 @@ struct TirePressureSample final {
     std::chrono::system_clock::time_point timestamp;
 };
 
-inline ara::core::InstanceSpecifier TirePressureInstanceSpecifier() {
-    return ara::core::InstanceSpecifier("/OpenAA/Applications/TirePressure/TirePressureService");
-}
-
-inline ara::com::InstanceIdentifier TirePressureInstanceIdentifier() {
-    return ara::com::InstanceIdentifier::Create("openaa/tire-pressure/service");
-}
-
-inline ara::com::ServiceIdentifierType TirePressureServiceIdentifier() {
-    return ara::com::ServiceIdentifierType("openaa.examples.TirePressureService");
-}
-
-inline std::filesystem::path TirePressureSnapshotPath() {
-    return std::filesystem::temp_directory_path() / "openaa_ara_com" /
-           "tire_pressure_snapshot.json";
-}
-
 inline std::string ToIso8601(std::chrono::system_clock::time_point timestamp) {
     const auto time = std::chrono::system_clock::to_time_t(timestamp);
     std::tm tm_snapshot{};
@@ -58,6 +39,27 @@ inline std::string ToIso8601(std::chrono::system_clock::time_point timestamp) {
     std::ostringstream stream;
     stream << std::put_time(&tm_snapshot, "%FT%TZ");
     return stream.str();
+}
+
+inline std::string SerializeMethodRequest(std::string_view command) {
+    return std::string(command);
+}
+
+inline std::string SerializeFireAndForgetMessage(std::string_view command, std::string_view detail) {
+    return std::string(command) + ":" + std::string(detail);
+}
+
+inline std::optional<std::pair<std::string, std::string>> DeserializeFireAndForgetMessage(
+    std::string_view payload) {
+    const auto separator = payload.find(':');
+    if (separator == std::string_view::npos) {
+        return std::nullopt;
+    }
+
+    return std::pair<std::string, std::string>{
+        std::string(payload.substr(0, separator)),
+        std::string(payload.substr(separator + 1)),
+    };
 }
 
 inline std::string SerializeSample(const TirePressureSample& sample) {

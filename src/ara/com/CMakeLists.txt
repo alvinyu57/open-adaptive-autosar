@@ -2,6 +2,7 @@ add_library(ara_com_lib SHARED
     com_error_domain.cpp
     com_runtime_state.cpp
     runtime.cpp
+    shared_memory_ipc.cpp
 )
 
 target_include_directories(ara_com_lib

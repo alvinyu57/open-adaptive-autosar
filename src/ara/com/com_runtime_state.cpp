@@ -1,25 +1,35 @@
 #include "com_runtime_state.hpp"
 
-#include <cctype>
-#include <filesystem>
-#include <fstream>
-#include <limits>
-#include <optional>
-#include <sstream>
+#include <algorithm>
+#include <array>
+#include <cerrno>
+#include <cstring>
+#include <fcntl.h>
+#include <semaphore.h>
+#include <string>
+#include <string_view>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 namespace ara::com::runtime::internal {
 
 namespace {
 
-std::filesystem::path RegistryRoot() {
-    return std::filesystem::temp_directory_path() / "openaa_ara_com" / "registry";
-}
+constexpr std::uint32_t kRegistryMagic = 0x434F4D52U;
+constexpr std::size_t kMaxRegistryEntries = 64U;
+constexpr std::size_t kMaxInstanceSpecifierLength = 256U;
+constexpr std::size_t kMaxInstanceIdentifierLength = 128U;
+constexpr std::size_t kMaxServiceIdentifierLength = 128U;
+constexpr std::size_t kMaxEndpointLength = 256U;
 
 std::string Sanitize(std::string_view value) {
     std::string sanitized;
-    sanitized.reserve(value.size());
+    sanitized.reserve(value.size() + 16U);
+    sanitized.push_back('/');
     for (const char character : value) {
-        if (std::isalnum(static_cast<unsigned char>(character)) != 0) {
+        if ((character >= 'a' && character <= 'z') || (character >= 'A' && character <= 'Z') ||
+            (character >= '0' && character <= '9')) {
             sanitized.push_back(character);
         } else {
             sanitized.push_back('_');
@@ -28,203 +38,340 @@ std::string Sanitize(std::string_view value) {
     return sanitized;
 }
 
-std::filesystem::path InstanceMappingPath(std::string_view instance_specifier) {
-    return RegistryRoot() / "instances" / (Sanitize(instance_specifier) + ".map");
-}
+struct RegistryInstanceEntry final {
+    bool in_use{false};
+    std::uint32_t binding_type{0U};
+    std::array<char, kMaxInstanceSpecifierLength> instance_specifier{};
+    std::array<char, kMaxInstanceIdentifierLength> instance_identifier{};
+    std::array<char, kMaxEndpointLength> endpoint{};
+};
 
-std::filesystem::path ServiceRecordPath(std::string_view service_id,
-                                        std::string_view instance_identifier) {
-    return RegistryRoot() / "services" /
-           (Sanitize(service_id) + "__" + Sanitize(instance_identifier) + ".svc");
-}
+struct RegistryServiceEntry final {
+    bool in_use{false};
+    std::uint32_t binding_type{0U};
+    std::array<char, kMaxServiceIdentifierLength> service_id{};
+    std::array<char, kMaxInstanceIdentifierLength> instance_identifier{};
+    std::array<char, kMaxEndpointLength> endpoint{};
+};
 
-bool EnsureDirectory(const std::filesystem::path& path) {
-    std::error_code error_code;
-    std::filesystem::create_directories(path, error_code);
-    return !error_code;
-}
+struct RegistryLayout final {
+    std::uint32_t magic{0U};
+    std::array<RegistryInstanceEntry, kMaxRegistryEntries> instances{};
+    std::array<RegistryServiceEntry, kMaxRegistryEntries> services{};
+};
 
-bool WriteTextFile(const std::filesystem::path& path, std::string_view content) {
-    if (!EnsureDirectory(path.parent_path())) {
+template <std::size_t N>
+bool CopyString(std::array<char, N>& destination, std::string_view source) {
+    if (source.size() >= destination.size()) {
         return false;
     }
+    std::fill(destination.begin(), destination.end(), '\0');
+    std::memcpy(destination.data(), source.data(), source.size());
+    return true;
+}
 
-    const auto temp_path = path.string() + ".tmp";
-    {
-        std::ofstream output(temp_path, std::ios::trunc);
-        if (!output.is_open()) {
-            return false;
+std::string_view ViewString(const auto& source) {
+    return std::string_view(source.data(), ::strnlen(source.data(), source.size()));
+}
+
+class RegistrySharedMemory final {
+public:
+    RegistrySharedMemory() noexcept {
+        fd_ = shm_open(Sanitize("openaa_ara_com_registry").c_str(), O_CREAT | O_RDWR, 0666);
+        if (fd_ == -1) {
+            return;
         }
-        output << content;
+
+        if (ftruncate(fd_, static_cast<off_t>(sizeof(RegistryLayout))) == -1) {
+            close(fd_);
+            fd_ = -1;
+            return;
+        }
+
+        void* mapping =
+            mmap(nullptr, sizeof(RegistryLayout), PROT_READ | PROT_WRITE, MAP_SHARED, fd_, 0);
+        if (mapping == MAP_FAILED) {
+            close(fd_);
+            fd_ = -1;
+            return;
+        }
+
+        layout_ = static_cast<RegistryLayout*>(mapping);
     }
 
-    std::error_code error_code;
-    std::filesystem::rename(temp_path, path, error_code);
-    return !error_code;
+    ~RegistrySharedMemory() noexcept {
+        if (layout_ != nullptr) {
+            munmap(layout_, sizeof(RegistryLayout));
+        }
+        if (fd_ != -1) {
+            close(fd_);
+        }
+    }
+
+    bool IsOpen() const noexcept {
+        return layout_ != nullptr;
+    }
+
+    RegistryLayout* Get() const noexcept {
+        return layout_;
+    }
+
+private:
+    int fd_{-1};
+    RegistryLayout* layout_{nullptr};
+};
+
+class RegistrySemaphore final {
+public:
+    RegistrySemaphore() noexcept {
+        semaphore_ = sem_open(Sanitize("openaa_ara_com_registry_sem").c_str(), O_CREAT, 0666, 1);
+    }
+
+    ~RegistrySemaphore() noexcept {
+        if (semaphore_ != SEM_FAILED) {
+            sem_close(semaphore_);
+        }
+    }
+
+    bool IsOpen() const noexcept {
+        return semaphore_ != SEM_FAILED;
+    }
+
+    sem_t* Get() const noexcept {
+        return semaphore_;
+    }
+
+private:
+    sem_t* semaphore_{SEM_FAILED};
+};
+
+class SemaphoreGuard final {
+public:
+    explicit SemaphoreGuard(sem_t* semaphore) noexcept
+        : semaphore_(semaphore) {
+        if (semaphore_ != nullptr) {
+            sem_wait(semaphore_);
+        }
+    }
+
+    ~SemaphoreGuard() noexcept {
+        if (semaphore_ != nullptr) {
+            sem_post(semaphore_);
+        }
+    }
+
+private:
+    sem_t* semaphore_{nullptr};
+};
+
+ara::core::Result<RegistryLayout*> OpenRegistry() noexcept {
+    static RegistrySharedMemory persistent_region;
+    static RegistrySemaphore persistent_semaphore;
+    if (!persistent_region.IsOpen() || !persistent_semaphore.IsOpen()) {
+        return ara::core::Result<RegistryLayout*>{MakeErrorCode(ComErrc::kCommunicationFailure)};
+    }
+
+    SemaphoreGuard guard(persistent_semaphore.Get());
+    auto* layout = persistent_region.Get();
+    if (layout->magic != kRegistryMagic) {
+        std::memset(layout, 0, sizeof(RegistryLayout));
+        layout->magic = kRegistryMagic;
+    }
+
+    return ara::core::Result<RegistryLayout*>{layout};
 }
 
-std::optional<std::string> ReadTextFile(const std::filesystem::path& path) {
-    std::ifstream input(path);
-    if (!input.is_open()) {
-        return std::nullopt;
-    }
-
-    std::ostringstream buffer;
-    buffer << input.rdbuf();
-    return buffer.str();
+RegistrySemaphore& GetRegistrySemaphore() {
+    static RegistrySemaphore semaphore;
+    return semaphore;
 }
 
-std::string SerializeBindingMetadata(const BindingMetadata& metadata) {
-    std::ostringstream stream;
-    stream << static_cast<int>(metadata.binding_type) << '\n' << metadata.endpoint.View() << '\n';
-    return stream.str();
-}
-
-std::optional<BindingMetadata> DeserializeBindingMetadata(std::string_view text) {
-    std::istringstream stream{std::string(text)};
-    int binding_type_value = 0;
-    std::string endpoint;
-    if (!(stream >> binding_type_value)) {
-        return std::nullopt;
-    }
-    stream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-    if (!std::getline(stream, endpoint)) {
-        return std::nullopt;
-    }
-
+template <typename Entry>
+BindingMetadata ToBindingMetadata(const Entry& entry) {
     return BindingMetadata{
-        static_cast<BindingType>(binding_type_value),
-        ara::core::String(endpoint),
+        static_cast<BindingType>(entry.binding_type),
+        ara::core::String(ViewString(entry.endpoint)),
     };
 }
+
+} // namespace
 
 class IpcBindingRuntime final : public IBindingRuntime {
 public:
     ara::core::Result<void> OfferService(const ServiceRecord& record) noexcept override {
-        std::lock_guard<std::mutex> lock(mutex_);
-
-        const ServiceKey key{record.service_id, record.instance_identifier};
-        if (services_.find(key) != services_.end()) {
-            return ara::core::Result<void>{MakeErrorCode(ComErrc::kServiceNotAvailable)};
+        auto registry_result = OpenRegistry();
+        if (!registry_result.HasValue()) {
+            return ara::core::Result<void>{registry_result.Error()};
         }
 
-        services_.emplace(key, record.metadata);
-        if (!WriteTextFile(ServiceRecordPath(record.service_id.toString(),
-                                             record.instance_identifier.toString()),
-                           SerializeBindingMetadata(record.metadata))) {
+        auto& semaphore = GetRegistrySemaphore();
+        if (!semaphore.IsOpen()) {
             return ara::core::Result<void>{MakeErrorCode(ComErrc::kCommunicationFailure)};
         }
 
-        return ara::core::Result<void>{};
-    }
-
-    ara::core::Result<void>
-    StopOfferService(const ara::com::ServiceIdentifierType& service_id,
-                     const ara::com::InstanceIdentifier& instance_identifier) noexcept override {
-        std::lock_guard<std::mutex> lock(mutex_);
-
-        const ServiceKey key{service_id, instance_identifier};
-        if (services_.erase(key) == 0U) {
-            const auto path =
-                ServiceRecordPath(service_id.toString(), instance_identifier.toString());
-            std::error_code error_code;
-            if (!std::filesystem::remove(path, error_code)) {
-                return ara::core::Result<void>{MakeErrorCode(ComErrc::kServiceNotOffered)};
+        SemaphoreGuard guard(semaphore.Get());
+        auto* layout = registry_result.Value();
+        for (auto& entry : layout->services) {
+            if (entry.in_use &&
+                ViewString(entry.service_id) == record.service_id.toString() &&
+                ViewString(entry.instance_identifier) == record.instance_identifier.toString()) {
+                entry.binding_type = static_cast<std::uint32_t>(record.metadata.binding_type);
+                if (!CopyString(entry.endpoint, record.metadata.endpoint.View())) {
+                    return ara::core::Result<void>{MakeErrorCode(ComErrc::kCommunicationFailure)};
+                }
+                return ara::core::Result<void>{};
             }
+        }
+
+        for (auto& entry : layout->services) {
+            if (entry.in_use) {
+                continue;
+            }
+
+            if (!CopyString(entry.service_id, record.service_id.toString()) ||
+                !CopyString(entry.instance_identifier, record.instance_identifier.toString()) ||
+                !CopyString(entry.endpoint, record.metadata.endpoint.View())) {
+                return ara::core::Result<void>{MakeErrorCode(ComErrc::kCommunicationFailure)};
+            }
+
+            entry.binding_type = static_cast<std::uint32_t>(record.metadata.binding_type);
+            entry.in_use = true;
             return ara::core::Result<void>{};
         }
 
-        std::error_code error_code;
-        std::filesystem::remove(
-            ServiceRecordPath(service_id.toString(), instance_identifier.toString()), error_code);
-        return ara::core::Result<void>{};
+        return ara::core::Result<void>{MakeErrorCode(ComErrc::kMaxSamplesExceeded)};
     }
 
-    ara::core::Result<ara::core::Vector<BindingMetadata>>
-    FindServices(const ara::com::ServiceIdentifierType& service_id,
-                 const ara::com::InstanceIdentifier& instance_identifier) noexcept override {
-        std::lock_guard<std::mutex> lock(mutex_);
-
-        ara::core::Vector<BindingMetadata> matches;
-        const ServiceKey key{service_id, instance_identifier};
-        const auto iter = services_.find(key);
-        if (iter != services_.end()) {
-            matches.push_back(iter->second);
-            return ara::core::Result<ara::core::Vector<BindingMetadata>>{std::move(matches)};
+    ara::core::Result<void> StopOfferService(
+        const ara::com::ServiceIdentifierType& service_id,
+        const ara::com::InstanceIdentifier& instance_identifier) noexcept override {
+        auto registry_result = OpenRegistry();
+        if (!registry_result.HasValue()) {
+            return ara::core::Result<void>{registry_result.Error()};
         }
 
-        const auto content =
-            ReadTextFile(ServiceRecordPath(service_id.toString(), instance_identifier.toString()));
-        if (content.has_value()) {
-            auto metadata = DeserializeBindingMetadata(*content);
-            if (metadata.has_value()) {
-                matches.push_back(*metadata);
+        auto& semaphore = GetRegistrySemaphore();
+        if (!semaphore.IsOpen()) {
+            return ara::core::Result<void>{MakeErrorCode(ComErrc::kCommunicationFailure)};
+        }
+
+        SemaphoreGuard guard(semaphore.Get());
+        auto* layout = registry_result.Value();
+        for (auto& entry : layout->services) {
+            if (entry.in_use &&
+                ViewString(entry.service_id) == service_id.toString() &&
+                ViewString(entry.instance_identifier) == instance_identifier.toString()) {
+                entry = RegistryServiceEntry{};
+                return ara::core::Result<void>{};
+            }
+        }
+
+        return ara::core::Result<void>{MakeErrorCode(ComErrc::kServiceNotOffered)};
+    }
+
+    ara::core::Result<ara::core::Vector<BindingMetadata>> FindServices(
+        const ara::com::ServiceIdentifierType& service_id,
+        const ara::com::InstanceIdentifier& instance_identifier) noexcept override {
+        auto registry_result = OpenRegistry();
+        if (!registry_result.HasValue()) {
+            return ara::core::Result<ara::core::Vector<BindingMetadata>>{registry_result.Error()};
+        }
+
+        auto& semaphore = GetRegistrySemaphore();
+        if (!semaphore.IsOpen()) {
+            return ara::core::Result<ara::core::Vector<BindingMetadata>>{
+                MakeErrorCode(ComErrc::kCommunicationFailure)};
+        }
+
+        ara::core::Vector<BindingMetadata> matches;
+        SemaphoreGuard guard(semaphore.Get());
+        auto* layout = registry_result.Value();
+        for (const auto& entry : layout->services) {
+            if (!entry.in_use) {
+                continue;
+            }
+            if (ViewString(entry.service_id) == service_id.toString() &&
+                ViewString(entry.instance_identifier) == instance_identifier.toString()) {
+                matches.push_back(ToBindingMetadata(entry));
             }
         }
 
         return ara::core::Result<ara::core::Vector<BindingMetadata>>{std::move(matches)};
     }
-
-private:
-    using ServiceKey = ComRuntimeState::ServiceKey;
-
-    std::mutex mutex_;
-    std::map<ServiceKey, BindingMetadata> services_;
 };
-
-} // namespace
 
 ComRuntimeState& ComRuntimeState::Instance() noexcept {
     static ComRuntimeState instance;
     return instance;
 }
 
-ara::core::Result<void>
-ComRuntimeState::RegisterInstanceMapping(const ara::core::InstanceSpecifier& instance_specifier,
-                                         const ara::com::InstanceIdentifier& instance_identifier,
-                                         const BindingMetadata& metadata) noexcept {
-    std::lock_guard<std::mutex> lock(mutex_);
+ara::core::Result<void> ComRuntimeState::RegisterInstanceMapping(
+    const ara::core::InstanceSpecifier& instance_specifier,
+    const ara::com::InstanceIdentifier& instance_identifier,
+    const BindingMetadata& metadata) noexcept {
+    auto registry_result = OpenRegistry();
+    if (!registry_result.HasValue()) {
+        return ara::core::Result<void>{registry_result.Error()};
+    }
 
-    auto& mappings = instance_mappings_[std::string(instance_specifier.View())];
-    for (const auto& mapping : mappings) {
-        if (mapping.instance_identifier == instance_identifier) {
+    auto& semaphore = GetRegistrySemaphore();
+    if (!semaphore.IsOpen()) {
+        return ara::core::Result<void>{MakeErrorCode(ComErrc::kCommunicationFailure)};
+    }
+
+    SemaphoreGuard guard(semaphore.Get());
+    auto* layout = registry_result.Value();
+    for (auto& entry : layout->instances) {
+        if (entry.in_use &&
+            ViewString(entry.instance_specifier) == instance_specifier.View()) {
+            entry.binding_type = static_cast<std::uint32_t>(metadata.binding_type);
+            if (!CopyString(entry.instance_identifier, instance_identifier.toString()) ||
+                !CopyString(entry.endpoint, metadata.endpoint.View())) {
+                return ara::core::Result<void>{MakeErrorCode(ComErrc::kCommunicationFailure)};
+            }
             return ara::core::Result<void>{};
         }
     }
 
-    mappings.push_back(InstanceMapping{instance_identifier, metadata});
-    std::ostringstream serialized_mapping;
-    serialized_mapping << instance_identifier.toString() << '\n'
-                       << SerializeBindingMetadata(metadata);
-    if (!WriteTextFile(InstanceMappingPath(instance_specifier.View()), serialized_mapping.str())) {
-        return ara::core::Result<void>{MakeErrorCode(ComErrc::kCommunicationFailure)};
+    for (auto& entry : layout->instances) {
+        if (entry.in_use) {
+            continue;
+        }
+        if (!CopyString(entry.instance_specifier, instance_specifier.View()) ||
+            !CopyString(entry.instance_identifier, instance_identifier.toString()) ||
+            !CopyString(entry.endpoint, metadata.endpoint.View())) {
+            return ara::core::Result<void>{MakeErrorCode(ComErrc::kCommunicationFailure)};
+        }
+        entry.binding_type = static_cast<std::uint32_t>(metadata.binding_type);
+        entry.in_use = true;
+        return ara::core::Result<void>{};
     }
 
-    return ara::core::Result<void>{};
+    return ara::core::Result<void>{MakeErrorCode(ComErrc::kMaxSamplesExceeded)};
 }
 
 ara::core::Result<ara::com::InstanceIdentifierContainer> ComRuntimeState::ResolveInstanceIDs(
     const ara::core::InstanceSpecifier& instance_specifier) noexcept {
-    std::lock_guard<std::mutex> lock(mutex_);
-
-    const auto iter = instance_mappings_.find(std::string(instance_specifier.View()));
-    ara::com::InstanceIdentifierContainer result;
-    if (iter != instance_mappings_.end()) {
-        result.reserve(iter->second.size());
-        for (const auto& mapping : iter->second) {
-            result.push_back(mapping.instance_identifier);
-        }
+    auto registry_result = OpenRegistry();
+    if (!registry_result.HasValue()) {
+        return ara::core::Result<ara::com::InstanceIdentifierContainer>{registry_result.Error()};
     }
 
-    if (result.empty()) {
-        const auto content = ReadTextFile(InstanceMappingPath(instance_specifier.View()));
-        if (content.has_value()) {
-            std::istringstream stream(*content);
-            std::string instance_id;
-            std::getline(stream, instance_id);
-            if (!instance_id.empty()) {
-                result.push_back(ara::com::InstanceIdentifier::Create(instance_id));
-            }
+    auto& semaphore = GetRegistrySemaphore();
+    if (!semaphore.IsOpen()) {
+        return ara::core::Result<ara::com::InstanceIdentifierContainer>{
+            MakeErrorCode(ComErrc::kCommunicationFailure)};
+    }
+
+    ara::com::InstanceIdentifierContainer result;
+    SemaphoreGuard guard(semaphore.Get());
+    auto* layout = registry_result.Value();
+    for (const auto& entry : layout->instances) {
+        if (!entry.in_use) {
+            continue;
+        }
+        if (ViewString(entry.instance_specifier) == instance_specifier.View()) {
+            result.push_back(ara::com::InstanceIdentifier::Create(ViewString(entry.instance_identifier)));
         }
     }
 
@@ -236,16 +383,11 @@ ara::core::Result<ara::com::InstanceIdentifierContainer> ComRuntimeState::Resolv
     return ara::core::Result<ara::com::InstanceIdentifierContainer>{std::move(result)};
 }
 
-ara::core::Result<void>
-ComRuntimeState::OfferService(const ara::com::ServiceIdentifierType& service_id,
-                              const ara::com::InstanceIdentifier& instance_identifier,
-                              const BindingMetadata& metadata) noexcept {
-    ServiceRecord record{
-        service_id,
-        instance_identifier,
-        metadata,
-    };
-
+ara::core::Result<void> ComRuntimeState::OfferService(
+    const ara::com::ServiceIdentifierType& service_id,
+    const ara::com::InstanceIdentifier& instance_identifier,
+    const BindingMetadata& metadata) noexcept {
+    ServiceRecord record{service_id, instance_identifier, metadata};
     return GetOrCreateBindingRuntime(metadata.binding_type).OfferService(record);
 }
 
@@ -253,29 +395,14 @@ ara::core::Result<void> ComRuntimeState::StopOfferService(
     const ara::com::ServiceIdentifierType& service_id,
     const ara::com::InstanceIdentifier& instance_identifier) noexcept {
     auto& ipc_runtime = GetOrCreateBindingRuntime(BindingType::kIpc);
-    auto result = ipc_runtime.StopOfferService(service_id, instance_identifier);
-    if (result.HasValue()) {
-        return result;
-    }
-
-    return ara::core::Result<void>{MakeErrorCode(ComErrc::kServiceNotOffered)};
+    return ipc_runtime.StopOfferService(service_id, instance_identifier);
 }
 
-ara::core::Result<ara::core::Vector<BindingMetadata>>
-ComRuntimeState::FindServices(const ara::com::ServiceIdentifierType& service_id,
-                              const ara::com::InstanceIdentifier& instance_identifier) {
-    ara::core::Vector<BindingMetadata> matches;
+ara::core::Result<ara::core::Vector<BindingMetadata>> ComRuntimeState::FindServices(
+    const ara::com::ServiceIdentifierType& service_id,
+    const ara::com::InstanceIdentifier& instance_identifier) {
     auto& ipc_runtime = GetOrCreateBindingRuntime(BindingType::kIpc);
-    auto result = ipc_runtime.FindServices(service_id, instance_identifier);
-    if (!result.HasValue()) {
-        return result;
-    }
-
-    for (const auto& metadata : result.Value()) {
-        matches.push_back(metadata);
-    }
-
-    return ara::core::Result<ara::core::Vector<BindingMetadata>>{std::move(matches)};
+    return ipc_runtime.FindServices(service_id, instance_identifier);
 }
 
 IBindingRuntime& ComRuntimeState::GetOrCreateBindingRuntime(BindingType binding_type) {

@@ -7,8 +7,17 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 BUILD_ROOT="${PROJECT_ROOT}/build/Release"
 TEST_BINARY="${BUILD_ROOT}/tests/openaa_core_smoke_test"
 
+needs_rebuild=false
+
 if [ ! -x "${TEST_BINARY}" ]; then
-    echo "core smoke test binary not found, building test target..." >&2
+    needs_rebuild=true
+elif find "${PROJECT_ROOT}/tests" "${PROJECT_ROOT}/include" "${PROJECT_ROOT}/src/ara" \
+    -type f -newer "${TEST_BINARY}" | grep -q .; then
+    needs_rebuild=true
+fi
+
+if [ "${needs_rebuild}" = true ]; then
+    echo "core smoke test binary missing or stale, building test target..." >&2
     "${PROJECT_ROOT}/scripts/build/build.sh" --build-tests
 fi
 

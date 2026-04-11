@@ -1,5 +1,8 @@
 #pragma once
 
+#include <chrono>
+#include <optional>
+
 #include "ara/com/com_error_domain.h"
 #include "ara/com/service/service_identifier.h"
 #include "ara/com/service/service_version.h"
@@ -24,6 +27,11 @@ struct BindingMetadata final {
     ara::core::String endpoint;
 };
 
+struct ChannelMessage final {
+    std::uint64_t correlation_id{0U};
+    ara::core::String payload;
+};
+
 ara::core::Result<void> RegisterInstanceMapping(
     const ara::core::InstanceSpecifier& instance_specifier,
     const ara::com::InstanceIdentifier& instance_identifier,
@@ -41,6 +49,36 @@ ara::core::Result<void> StopOfferService(
 ara::core::Result<ara::core::Vector<BindingMetadata>> FindServices(
     const ara::com::ServiceIdentifierType& service_id,
     const ara::com::InstanceIdentifier& instance_identifier) noexcept;
+
+ara::core::Result<void> PublishEvent(
+    std::string_view channel_name,
+    std::string_view payload) noexcept;
+
+ara::core::Result<std::optional<ara::core::String>> GetNewEvent(
+    std::string_view channel_name,
+    std::uint64_t& last_seen_sequence) noexcept;
+
+ara::core::Result<ara::core::String> CallMethod(
+    std::string_view channel_name,
+    std::string_view payload,
+    std::chrono::milliseconds timeout) noexcept;
+
+ara::core::Result<std::optional<ChannelMessage>> TakeMethodCall(
+    std::string_view channel_name,
+    std::uint64_t& last_seen_sequence) noexcept;
+
+ara::core::Result<void> SendMethodResponse(
+    std::string_view channel_name,
+    std::uint64_t correlation_id,
+    std::string_view payload) noexcept;
+
+ara::core::Result<void> SendFireAndForget(
+    std::string_view channel_name,
+    std::string_view payload) noexcept;
+
+ara::core::Result<std::optional<ara::core::String>> TakeFireAndForget(
+    std::string_view channel_name,
+    std::uint64_t& last_seen_sequence) noexcept;
 
 } // namespace internal
 
