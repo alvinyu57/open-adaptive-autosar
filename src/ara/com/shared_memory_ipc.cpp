@@ -41,12 +41,35 @@ std::string SemaphoreName(std::string_view channel_name) {
     return SanitizeChannelName(channel_name) + "_sem";
 }
 
+template <typename T, typename Callable>
+ara::core::Result<T> ExecuteNoexcept(Callable&& callable) noexcept {
+    try {
+        return callable();
+    } catch (...) {
+        return ara::core::Result<T>{MakeErrorCode(ComErrc::kCommunicationFailure)};
+    }
+}
+
+template <typename Callable>
+ara::core::Result<void> ExecuteNoexceptVoid(Callable&& callable) noexcept {
+    try {
+        return callable();
+    } catch (...) {
+        return ara::core::Result<void>{MakeErrorCode(ComErrc::kCommunicationFailure)};
+    }
+}
+
 template <typename Layout> class NamedSharedMemoryRegion final {
 public:
     explicit NamedSharedMemoryRegion(std::string_view channel_name) noexcept
         : name_(SanitizeChannelName(channel_name)) {
         Open();
     }
+
+    NamedSharedMemoryRegion(const NamedSharedMemoryRegion&) = delete;
+    NamedSharedMemoryRegion(NamedSharedMemoryRegion&&) = delete;
+    NamedSharedMemoryRegion& operator=(const NamedSharedMemoryRegion&) = delete;
+    NamedSharedMemoryRegion& operator=(NamedSharedMemoryRegion&&) = delete;
 
     ~NamedSharedMemoryRegion() noexcept {
         if (mapping_ != nullptr) {
@@ -100,6 +123,11 @@ public:
         semaphore_ = sem_open(name_.c_str(), O_CREAT, 0666, 1);
     }
 
+    NamedSemaphore(const NamedSemaphore&) = delete;
+    NamedSemaphore(NamedSemaphore&&) = delete;
+    NamedSemaphore& operator=(const NamedSemaphore&) = delete;
+    NamedSemaphore& operator=(NamedSemaphore&&) = delete;
+
     ~NamedSemaphore() noexcept {
         if (semaphore_ != SEM_FAILED) {
             sem_close(semaphore_);
@@ -127,6 +155,11 @@ public:
             sem_wait(semaphore_);
         }
     }
+
+    SemaphoreGuard(const SemaphoreGuard&) = delete;
+    SemaphoreGuard(SemaphoreGuard&&) = delete;
+    SemaphoreGuard& operator=(const SemaphoreGuard&) = delete;
+    SemaphoreGuard& operator=(SemaphoreGuard&&) = delete;
 
     ~SemaphoreGuard() noexcept {
         if (semaphore_ != nullptr) {
@@ -185,88 +218,189 @@ ara::core::Result<Layout*> OpenRegion(std::string_view channel_name,
 
 ara::core::Result<void> SharedMemoryEventChannel::Publish(std::string_view channel_name,
                                                           std::string_view payload) noexcept {
-    auto size_result = ValidatePayloadSize(payload);
-    if (!size_result.HasValue()) {
-        return size_result;
-    }
+    return ExecuteNoexceptVoid([channel_name, payload]() -> ara::core::Result<void> {
+        auto size_result = ValidatePayloadSize(payload);
+        if (!size_result.HasValue()) {
+            return size_result;
+        }
 
-    NamedSharedMemoryRegion<EventLayout> region(channel_name);
-    auto region_result = OpenRegion(channel_name, region);
-    if (!region_result.HasValue()) {
-        return ara::core::Result<void>{region_result.Error()};
-    }
+        NamedSharedMemoryRegion<EventLayout> region(channel_name);
+        auto region_result = OpenRegion(channel_name, region);
+        if (!region_result.HasValue()) {
+            return ara::core::Result<void>{region_result.Error()};
+        }
 
-    NamedSemaphore semaphore(channel_name);
-    if (!semaphore.IsOpen()) {
-        return ara::core::Result<void>{MakeErrorCode(ComErrc::kCommunicationFailure)};
-    }
+        NamedSemaphore semaphore(channel_name);
+        if (!semaphore.IsOpen()) {
+            return ara::core::Result<void>{MakeErrorCode(ComErrc::kCommunicationFailure)};
+        }
 
-    SemaphoreGuard guard(semaphore.Get());
-    auto* layout = region_result.Value();
-    if (layout->magic != kEventMagic) {
-        std::memset(layout, 0, sizeof(EventLayout));
-        layout->magic = kEventMagic;
-    }
+        SemaphoreGuard guard(semaphore.Get());
+        auto* layout = region_result.Value();
+        if (layout->magic != kEventMagic) {
+            std::memset(layout, 0, sizeof(EventLayout));
+            layout->magic = kEventMagic;
+        }
 
-    std::memcpy(layout->payload.data(), payload.data(), payload.size());
-    layout->payload[payload.size()] = '\0';
-    layout->payload_size = static_cast<std::uint32_t>(payload.size());
-    ++layout->sequence;
-    return ara::core::Result<void>{};
+        std::memcpy(layout->payload.data(), payload.data(), payload.size());
+        layout->payload[payload.size()] = '\0';
+        layout->payload_size = static_cast<std::uint32_t>(payload.size());
+        ++layout->sequence;
+        return ara::core::Result<void>{};
+    });
 }
 
 ara::core::Result<std::optional<ara::core::String>>
 SharedMemoryEventChannel::ReadIfNew(std::string_view channel_name,
                                     std::uint64_t& last_seen_sequence) noexcept {
-    NamedSharedMemoryRegion<EventLayout> region(channel_name);
-    auto region_result = OpenRegion(channel_name, region);
-    if (!region_result.HasValue()) {
-        return ara::core::Result<std::optional<ara::core::String>>{region_result.Error()};
-    }
+    return ExecuteNoexcept<std::optional<ara::core::String>>(
+        [channel_name, &last_seen_sequence]() -> ara::core::Result<std::optional<ara::core::String>> {
+            NamedSharedMemoryRegion<EventLayout> region(channel_name);
+            auto region_result = OpenRegion(channel_name, region);
+            if (!region_result.HasValue()) {
+                return ara::core::Result<std::optional<ara::core::String>>{region_result.Error()};
+            }
 
-    NamedSemaphore semaphore(channel_name);
-    if (!semaphore.IsOpen()) {
-        return ara::core::Result<std::optional<ara::core::String>>{
-            MakeErrorCode(ComErrc::kCommunicationFailure)};
-    }
+            NamedSemaphore semaphore(channel_name);
+            if (!semaphore.IsOpen()) {
+                return ara::core::Result<std::optional<ara::core::String>>{
+                    MakeErrorCode(ComErrc::kCommunicationFailure)};
+            }
 
-    SemaphoreGuard guard(semaphore.Get());
-    auto* layout = region_result.Value();
-    if (layout->magic != kEventMagic || layout->sequence == 0U ||
-        layout->sequence == last_seen_sequence) {
-        return ara::core::Result<std::optional<ara::core::String>>{
-            std::optional<ara::core::String>{}};
-    }
+            SemaphoreGuard guard(semaphore.Get());
+            auto* layout = region_result.Value();
+            if (layout->magic != kEventMagic || layout->sequence == 0U ||
+                layout->sequence == last_seen_sequence) {
+                return ara::core::Result<std::optional<ara::core::String>>{
+                    std::optional<ara::core::String>{}};
+            }
 
-    last_seen_sequence = layout->sequence;
-    return ara::core::Result<std::optional<ara::core::String>>{std::optional<ara::core::String>{
-        ara::core::String(std::string_view(layout->payload.data(), layout->payload_size))}};
+            last_seen_sequence = layout->sequence;
+            return ara::core::Result<std::optional<ara::core::String>>{
+                std::optional<ara::core::String>{ara::core::String(
+                    std::string_view(layout->payload.data(), layout->payload_size))}};
+        });
 }
 
 ara::core::Result<ara::core::String>
 SharedMemoryMethodChannel::Call(std::string_view channel_name,
                                 std::string_view payload,
                                 std::chrono::milliseconds timeout) noexcept {
-    auto size_result = ValidatePayloadSize(payload);
-    if (!size_result.HasValue()) {
-        return ara::core::Result<ara::core::String>{size_result.Error()};
-    }
+    return ExecuteNoexcept<ara::core::String>(
+        [channel_name, payload, timeout]() -> ara::core::Result<ara::core::String> {
+            auto size_result = ValidatePayloadSize(payload);
+            if (!size_result.HasValue()) {
+                return ara::core::Result<ara::core::String>{size_result.Error()};
+            }
 
-    NamedSharedMemoryRegion<MethodLayout> region(channel_name);
-    auto region_result = OpenRegion(channel_name, region);
-    if (!region_result.HasValue()) {
-        return ara::core::Result<ara::core::String>{region_result.Error()};
-    }
+            NamedSharedMemoryRegion<MethodLayout> region(channel_name);
+            auto region_result = OpenRegion(channel_name, region);
+            if (!region_result.HasValue()) {
+                return ara::core::Result<ara::core::String>{region_result.Error()};
+            }
 
-    NamedSemaphore semaphore(channel_name);
-    if (!semaphore.IsOpen()) {
-        return ara::core::Result<ara::core::String>{MakeErrorCode(ComErrc::kCommunicationFailure)};
-    }
+            NamedSemaphore semaphore(channel_name);
+            if (!semaphore.IsOpen()) {
+                return ara::core::Result<ara::core::String>{
+                    MakeErrorCode(ComErrc::kCommunicationFailure)};
+            }
 
-    const auto deadline = std::chrono::steady_clock::now() + timeout;
-    std::uint64_t correlation_id = 0U;
-    std::uint64_t response_sequence = 0U;
-    {
+            const auto deadline = std::chrono::steady_clock::now() + timeout;
+            std::uint64_t correlation_id = 0U;
+            std::uint64_t response_sequence = 0U;
+            {
+                SemaphoreGuard guard(semaphore.Get());
+                auto* layout = region_result.Value();
+                if (layout->magic != kMethodMagic) {
+                    std::memset(layout, 0, sizeof(MethodLayout));
+                    layout->magic = kMethodMagic;
+                }
+
+                correlation_id = layout->correlation_id + 1U;
+                layout->correlation_id = correlation_id;
+                std::memcpy(layout->request_payload.data(), payload.data(), payload.size());
+                layout->request_payload[payload.size()] = '\0';
+                layout->request_size = static_cast<std::uint32_t>(payload.size());
+                ++layout->request_sequence;
+                response_sequence = layout->response_sequence;
+            }
+
+            while (std::chrono::steady_clock::now() < deadline) {
+                {
+                    SemaphoreGuard guard(semaphore.Get());
+                    auto* layout = region_result.Value();
+                    if (layout->magic == kMethodMagic &&
+                        layout->response_sequence > response_sequence &&
+                        layout->response_correlation_id == correlation_id) {
+                        return ara::core::Result<ara::core::String>{ara::core::String(
+                            std::string_view(layout->response_payload.data(),
+                                             layout->response_size))};
+                    }
+                }
+
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            }
+
+            return ara::core::Result<ara::core::String>{
+                MakeErrorCode(ComErrc::kCommunicationFailure)};
+        });
+}
+
+ara::core::Result<std::optional<ChannelMessage>>
+SharedMemoryMethodChannel::TakeRequest(std::string_view channel_name,
+                                       std::uint64_t& last_seen_sequence) noexcept {
+    return ExecuteNoexcept<std::optional<ChannelMessage>>(
+        [channel_name, &last_seen_sequence]() -> ara::core::Result<std::optional<ChannelMessage>> {
+            NamedSharedMemoryRegion<MethodLayout> region(channel_name);
+            auto region_result = OpenRegion(channel_name, region);
+            if (!region_result.HasValue()) {
+                return ara::core::Result<std::optional<ChannelMessage>>{region_result.Error()};
+            }
+
+            NamedSemaphore semaphore(channel_name);
+            if (!semaphore.IsOpen()) {
+                return ara::core::Result<std::optional<ChannelMessage>>{
+                    MakeErrorCode(ComErrc::kCommunicationFailure)};
+            }
+
+            SemaphoreGuard guard(semaphore.Get());
+            auto* layout = region_result.Value();
+            if (layout->magic != kMethodMagic || layout->request_sequence == 0U ||
+                layout->request_sequence == last_seen_sequence) {
+                return ara::core::Result<std::optional<ChannelMessage>>{
+                    std::optional<ChannelMessage>{}};
+            }
+
+            last_seen_sequence = layout->request_sequence;
+            return ara::core::Result<std::optional<ChannelMessage>>{
+                std::optional<ChannelMessage>{ChannelMessage{
+                    layout->correlation_id,
+                    ara::core::String(
+                        std::string_view(layout->request_payload.data(), layout->request_size)),
+                }}};
+        });
+}
+
+ara::core::Result<void> SharedMemoryMethodChannel::SendResponse(std::string_view channel_name,
+                                                                std::uint64_t correlation_id,
+                                                                std::string_view payload) noexcept {
+    return ExecuteNoexceptVoid([channel_name, correlation_id, payload]() -> ara::core::Result<void> {
+        auto size_result = ValidatePayloadSize(payload);
+        if (!size_result.HasValue()) {
+            return size_result;
+        }
+
+        NamedSharedMemoryRegion<MethodLayout> region(channel_name);
+        auto region_result = OpenRegion(channel_name, region);
+        if (!region_result.HasValue()) {
+            return ara::core::Result<void>{region_result.Error()};
+        }
+
+        NamedSemaphore semaphore(channel_name);
+        if (!semaphore.IsOpen()) {
+            return ara::core::Result<void>{MakeErrorCode(ComErrc::kCommunicationFailure)};
+        }
+
         SemaphoreGuard guard(semaphore.Get());
         auto* layout = region_result.Value();
         if (layout->magic != kMethodMagic) {
@@ -274,155 +408,79 @@ SharedMemoryMethodChannel::Call(std::string_view channel_name,
             layout->magic = kMethodMagic;
         }
 
-        correlation_id = layout->correlation_id + 1U;
-        layout->correlation_id = correlation_id;
-        std::memcpy(layout->request_payload.data(), payload.data(), payload.size());
-        layout->request_payload[payload.size()] = '\0';
-        layout->request_size = static_cast<std::uint32_t>(payload.size());
-        ++layout->request_sequence;
-        response_sequence = layout->response_sequence;
-    }
-
-    while (std::chrono::steady_clock::now() < deadline) {
-        {
-            SemaphoreGuard guard(semaphore.Get());
-            auto* layout = region_result.Value();
-            if (layout->magic == kMethodMagic && layout->response_sequence > response_sequence &&
-                layout->response_correlation_id == correlation_id) {
-                return ara::core::Result<ara::core::String>{ara::core::String(
-                    std::string_view(layout->response_payload.data(), layout->response_size))};
-            }
-        }
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    }
-
-    return ara::core::Result<ara::core::String>{MakeErrorCode(ComErrc::kCommunicationFailure)};
-}
-
-ara::core::Result<std::optional<ChannelMessage>>
-SharedMemoryMethodChannel::TakeRequest(std::string_view channel_name,
-                                       std::uint64_t& last_seen_sequence) noexcept {
-    NamedSharedMemoryRegion<MethodLayout> region(channel_name);
-    auto region_result = OpenRegion(channel_name, region);
-    if (!region_result.HasValue()) {
-        return ara::core::Result<std::optional<ChannelMessage>>{region_result.Error()};
-    }
-
-    NamedSemaphore semaphore(channel_name);
-    if (!semaphore.IsOpen()) {
-        return ara::core::Result<std::optional<ChannelMessage>>{
-            MakeErrorCode(ComErrc::kCommunicationFailure)};
-    }
-
-    SemaphoreGuard guard(semaphore.Get());
-    auto* layout = region_result.Value();
-    if (layout->magic != kMethodMagic || layout->request_sequence == 0U ||
-        layout->request_sequence == last_seen_sequence) {
-        return ara::core::Result<std::optional<ChannelMessage>>{std::optional<ChannelMessage>{}};
-    }
-
-    last_seen_sequence = layout->request_sequence;
-    return ara::core::Result<std::optional<ChannelMessage>>{
-        std::optional<ChannelMessage>{ChannelMessage{
-            layout->correlation_id,
-            ara::core::String(
-                std::string_view(layout->request_payload.data(), layout->request_size)),
-        }}};
-}
-
-ara::core::Result<void> SharedMemoryMethodChannel::SendResponse(std::string_view channel_name,
-                                                                std::uint64_t correlation_id,
-                                                                std::string_view payload) noexcept {
-    auto size_result = ValidatePayloadSize(payload);
-    if (!size_result.HasValue()) {
-        return size_result;
-    }
-
-    NamedSharedMemoryRegion<MethodLayout> region(channel_name);
-    auto region_result = OpenRegion(channel_name, region);
-    if (!region_result.HasValue()) {
-        return ara::core::Result<void>{region_result.Error()};
-    }
-
-    NamedSemaphore semaphore(channel_name);
-    if (!semaphore.IsOpen()) {
-        return ara::core::Result<void>{MakeErrorCode(ComErrc::kCommunicationFailure)};
-    }
-
-    SemaphoreGuard guard(semaphore.Get());
-    auto* layout = region_result.Value();
-    if (layout->magic != kMethodMagic) {
-        std::memset(layout, 0, sizeof(MethodLayout));
-        layout->magic = kMethodMagic;
-    }
-
-    std::memcpy(layout->response_payload.data(), payload.data(), payload.size());
-    layout->response_payload[payload.size()] = '\0';
-    layout->response_size = static_cast<std::uint32_t>(payload.size());
-    layout->response_correlation_id = correlation_id;
-    ++layout->response_sequence;
-    return ara::core::Result<void>{};
+        std::memcpy(layout->response_payload.data(), payload.data(), payload.size());
+        layout->response_payload[payload.size()] = '\0';
+        layout->response_size = static_cast<std::uint32_t>(payload.size());
+        layout->response_correlation_id = correlation_id;
+        ++layout->response_sequence;
+        return ara::core::Result<void>{};
+    });
 }
 
 ara::core::Result<void> SharedMemoryFireAndForgetChannel::Send(std::string_view channel_name,
                                                                std::string_view payload) noexcept {
-    auto size_result = ValidatePayloadSize(payload);
-    if (!size_result.HasValue()) {
-        return size_result;
-    }
+    return ExecuteNoexceptVoid([channel_name, payload]() -> ara::core::Result<void> {
+        auto size_result = ValidatePayloadSize(payload);
+        if (!size_result.HasValue()) {
+            return size_result;
+        }
 
-    NamedSharedMemoryRegion<OneWayLayout> region(channel_name);
-    auto region_result = OpenRegion(channel_name, region);
-    if (!region_result.HasValue()) {
-        return ara::core::Result<void>{region_result.Error()};
-    }
+        NamedSharedMemoryRegion<OneWayLayout> region(channel_name);
+        auto region_result = OpenRegion(channel_name, region);
+        if (!region_result.HasValue()) {
+            return ara::core::Result<void>{region_result.Error()};
+        }
 
-    NamedSemaphore semaphore(channel_name);
-    if (!semaphore.IsOpen()) {
-        return ara::core::Result<void>{MakeErrorCode(ComErrc::kCommunicationFailure)};
-    }
+        NamedSemaphore semaphore(channel_name);
+        if (!semaphore.IsOpen()) {
+            return ara::core::Result<void>{MakeErrorCode(ComErrc::kCommunicationFailure)};
+        }
 
-    SemaphoreGuard guard(semaphore.Get());
-    auto* layout = region_result.Value();
-    if (layout->magic != kOneWayMagic) {
-        std::memset(layout, 0, sizeof(OneWayLayout));
-        layout->magic = kOneWayMagic;
-    }
+        SemaphoreGuard guard(semaphore.Get());
+        auto* layout = region_result.Value();
+        if (layout->magic != kOneWayMagic) {
+            std::memset(layout, 0, sizeof(OneWayLayout));
+            layout->magic = kOneWayMagic;
+        }
 
-    std::memcpy(layout->payload.data(), payload.data(), payload.size());
-    layout->payload[payload.size()] = '\0';
-    layout->payload_size = static_cast<std::uint32_t>(payload.size());
-    ++layout->sequence;
-    return ara::core::Result<void>{};
+        std::memcpy(layout->payload.data(), payload.data(), payload.size());
+        layout->payload[payload.size()] = '\0';
+        layout->payload_size = static_cast<std::uint32_t>(payload.size());
+        ++layout->sequence;
+        return ara::core::Result<void>{};
+    });
 }
 
 ara::core::Result<std::optional<ara::core::String>>
 SharedMemoryFireAndForgetChannel::Take(std::string_view channel_name,
                                        std::uint64_t& last_seen_sequence) noexcept {
-    NamedSharedMemoryRegion<OneWayLayout> region(channel_name);
-    auto region_result = OpenRegion(channel_name, region);
-    if (!region_result.HasValue()) {
-        return ara::core::Result<std::optional<ara::core::String>>{region_result.Error()};
-    }
+    return ExecuteNoexcept<std::optional<ara::core::String>>(
+        [channel_name, &last_seen_sequence]() -> ara::core::Result<std::optional<ara::core::String>> {
+            NamedSharedMemoryRegion<OneWayLayout> region(channel_name);
+            auto region_result = OpenRegion(channel_name, region);
+            if (!region_result.HasValue()) {
+                return ara::core::Result<std::optional<ara::core::String>>{region_result.Error()};
+            }
 
-    NamedSemaphore semaphore(channel_name);
-    if (!semaphore.IsOpen()) {
-        return ara::core::Result<std::optional<ara::core::String>>{
-            MakeErrorCode(ComErrc::kCommunicationFailure)};
-    }
+            NamedSemaphore semaphore(channel_name);
+            if (!semaphore.IsOpen()) {
+                return ara::core::Result<std::optional<ara::core::String>>{
+                    MakeErrorCode(ComErrc::kCommunicationFailure)};
+            }
 
-    SemaphoreGuard guard(semaphore.Get());
-    auto* layout = region_result.Value();
-    if (layout->magic != kOneWayMagic || layout->sequence == 0U ||
-        layout->sequence == last_seen_sequence) {
-        return ara::core::Result<std::optional<ara::core::String>>{
-            std::optional<ara::core::String>{}};
-    }
+            SemaphoreGuard guard(semaphore.Get());
+            auto* layout = region_result.Value();
+            if (layout->magic != kOneWayMagic || layout->sequence == 0U ||
+                layout->sequence == last_seen_sequence) {
+                return ara::core::Result<std::optional<ara::core::String>>{
+                    std::optional<ara::core::String>{}};
+            }
 
-    last_seen_sequence = layout->sequence;
-    return ara::core::Result<std::optional<ara::core::String>>{std::optional<ara::core::String>{
-        ara::core::String(std::string_view(layout->payload.data(), layout->payload_size))}};
+            last_seen_sequence = layout->sequence;
+            return ara::core::Result<std::optional<ara::core::String>>{
+                std::optional<ara::core::String>{ara::core::String(
+                    std::string_view(layout->payload.data(), layout->payload_size))}};
+        });
 }
 
 } // namespace ara::com::runtime::internal

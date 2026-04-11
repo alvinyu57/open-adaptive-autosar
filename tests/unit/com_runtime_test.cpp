@@ -85,8 +85,11 @@ TEST(ComRuntimeTest, PublishesAndReadsSharedMemoryEvents) {
     auto first_read_result =
         ara::com::runtime::internal::GetNewEvent(channel_name, last_seen_sequence);
     ASSERT_TRUE(first_read_result.HasValue());
-    ASSERT_TRUE(first_read_result.Value().has_value());
-    EXPECT_EQ(first_read_result.Value()->View(), R"({"pressureKPa":99})");
+    const auto first_payload = first_read_result.Value();
+    ASSERT_TRUE(first_payload.has_value());
+    if (first_payload.has_value()) {
+        EXPECT_EQ(first_payload->View(), R"({"pressureKPa":99})");
+    }
 
     auto second_read_result =
         ara::com::runtime::internal::GetNewEvent(channel_name, last_seen_sequence);
@@ -115,11 +118,13 @@ TEST(ComRuntimeTest, CompletesSharedMemoryRequestResponseRoundTrip) {
     }
 
     ASSERT_TRUE(request.has_value());
-    EXPECT_EQ(request->payload.View(), "GetLatestPressure");
+    if (request.has_value()) {
+        EXPECT_EQ(request->payload.View(), "GetLatestPressure");
 
-    auto response_result = ara::com::runtime::internal::SendMethodResponse(
-        channel_name, request->correlation_id, R"({"pressureKPa":101})");
-    ASSERT_TRUE(response_result.HasValue());
+        auto response_result = ara::com::runtime::internal::SendMethodResponse(
+            channel_name, request->correlation_id, R"({"pressureKPa":101})");
+        ASSERT_TRUE(response_result.HasValue());
+    }
 
     auto call_result = future.get();
     ASSERT_TRUE(call_result.HasValue());
@@ -137,8 +142,11 @@ TEST(ComRuntimeTest, SendsAndReceivesSharedMemoryFireAndForgetMessages) {
     auto take_result =
         ara::com::runtime::internal::TakeFireAndForget(channel_name, last_seen_sequence);
     ASSERT_TRUE(take_result.HasValue());
-    ASSERT_TRUE(take_result.Value().has_value());
-    EXPECT_EQ(take_result.Value()->View(), "LowPressureAlarm:front_left=98");
+    const auto one_way_payload = take_result.Value();
+    ASSERT_TRUE(one_way_payload.has_value());
+    if (one_way_payload.has_value()) {
+        EXPECT_EQ(one_way_payload->View(), "LowPressureAlarm:front_left=98");
+    }
 
     auto second_take_result =
         ara::com::runtime::internal::TakeFireAndForget(channel_name, last_seen_sequence);
