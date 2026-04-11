@@ -263,11 +263,9 @@ public:
                 }
 
                 if (!CopyString(entry.service_id, record.service_id.toString()) ||
-                    !CopyString(entry.instance_identifier,
-                                record.instance_identifier.toString()) ||
+                    !CopyString(entry.instance_identifier, record.instance_identifier.toString()) ||
                     !CopyString(entry.endpoint, record.metadata.endpoint.View())) {
-                    return ara::core::Result<void>{
-                        MakeErrorCode(ComErrc::kCommunicationFailure)};
+                    return ara::core::Result<void>{MakeErrorCode(ComErrc::kCommunicationFailure)};
                 }
 
                 entry.binding_type = static_cast<std::uint32_t>(record.metadata.binding_type);
@@ -282,37 +280,38 @@ public:
     ara::core::Result<void>
     StopOfferService(const ara::com::ServiceIdentifierType& service_id,
                      const ara::com::InstanceIdentifier& instance_identifier) noexcept override {
-        return ExecuteNoexceptVoid([&service_id, &instance_identifier]() -> ara::core::Result<void> {
-            auto registry_result = OpenRegistry();
-            if (!registry_result.HasValue()) {
-                return ara::core::Result<void>{registry_result.Error()};
-            }
-
-            auto& semaphore = GetRegistrySemaphore();
-            if (!semaphore.IsOpen()) {
-                return ara::core::Result<void>{MakeErrorCode(ComErrc::kCommunicationFailure)};
-            }
-
-            SemaphoreGuard guard(semaphore.Get());
-            auto* layout = registry_result.Value();
-            for (auto& entry : layout->services) {
-                if (entry.in_use && ViewString(entry.service_id) == service_id.toString() &&
-                    ViewString(entry.instance_identifier) == instance_identifier.toString()) {
-                    entry = RegistryServiceEntry{};
-                    return ara::core::Result<void>{};
+        return ExecuteNoexceptVoid(
+            [&service_id, &instance_identifier]() -> ara::core::Result<void> {
+                auto registry_result = OpenRegistry();
+                if (!registry_result.HasValue()) {
+                    return ara::core::Result<void>{registry_result.Error()};
                 }
-            }
 
-            return ara::core::Result<void>{MakeErrorCode(ComErrc::kServiceNotOffered)};
-        });
+                auto& semaphore = GetRegistrySemaphore();
+                if (!semaphore.IsOpen()) {
+                    return ara::core::Result<void>{MakeErrorCode(ComErrc::kCommunicationFailure)};
+                }
+
+                SemaphoreGuard guard(semaphore.Get());
+                auto* layout = registry_result.Value();
+                for (auto& entry : layout->services) {
+                    if (entry.in_use && ViewString(entry.service_id) == service_id.toString() &&
+                        ViewString(entry.instance_identifier) == instance_identifier.toString()) {
+                        entry = RegistryServiceEntry{};
+                        return ara::core::Result<void>{};
+                    }
+                }
+
+                return ara::core::Result<void>{MakeErrorCode(ComErrc::kServiceNotOffered)};
+            });
     }
 
     ara::core::Result<ara::core::Vector<BindingMetadata>>
     FindServices(const ara::com::ServiceIdentifierType& service_id,
                  const ara::com::InstanceIdentifier& instance_identifier) noexcept override {
         return ExecuteNoexcept<ara::core::Vector<BindingMetadata>>(
-            [&service_id, &instance_identifier]()
-                -> ara::core::Result<ara::core::Vector<BindingMetadata>> {
+            [&service_id,
+             &instance_identifier]() -> ara::core::Result<ara::core::Vector<BindingMetadata>> {
                 auto registry_result = OpenRegistry();
                 if (!registry_result.HasValue()) {
                     return ara::core::Result<ara::core::Vector<BindingMetadata>>{
@@ -333,15 +332,13 @@ public:
                         continue;
                     }
                     if (ViewString(entry.service_id) == service_id.toString() &&
-                        ViewString(entry.instance_identifier) ==
-                            instance_identifier.toString()) {
+                        ViewString(entry.instance_identifier) == instance_identifier.toString()) {
                         matches.push_back(ToBindingMetadata(entry));
                     }
                 }
 
                 return ara::core::Result<ara::core::Vector<BindingMetadata>>{std::move(matches)};
-            }
-        );
+            });
     }
 };
 
@@ -354,50 +351,48 @@ ara::core::Result<void>
 ComRuntimeState::RegisterInstanceMapping(const ara::core::InstanceSpecifier& instance_specifier,
                                          const ara::com::InstanceIdentifier& instance_identifier,
                                          const BindingMetadata& metadata) noexcept {
-    return ExecuteNoexceptVoid(
-        [&instance_specifier, &instance_identifier, &metadata]() -> ara::core::Result<void> {
-            auto registry_result = OpenRegistry();
-            if (!registry_result.HasValue()) {
-                return ara::core::Result<void>{registry_result.Error()};
-            }
+    return ExecuteNoexceptVoid([&instance_specifier,
+                                &instance_identifier,
+                                &metadata]() -> ara::core::Result<void> {
+        auto registry_result = OpenRegistry();
+        if (!registry_result.HasValue()) {
+            return ara::core::Result<void>{registry_result.Error()};
+        }
 
-            auto& semaphore = GetRegistrySemaphore();
-            if (!semaphore.IsOpen()) {
-                return ara::core::Result<void>{MakeErrorCode(ComErrc::kCommunicationFailure)};
-            }
+        auto& semaphore = GetRegistrySemaphore();
+        if (!semaphore.IsOpen()) {
+            return ara::core::Result<void>{MakeErrorCode(ComErrc::kCommunicationFailure)};
+        }
 
-            SemaphoreGuard guard(semaphore.Get());
-            auto* layout = registry_result.Value();
-            for (auto& entry : layout->instances) {
-                if (entry.in_use &&
-                    ViewString(entry.instance_specifier) == instance_specifier.View()) {
-                    entry.binding_type = static_cast<std::uint32_t>(metadata.binding_type);
-                    if (!CopyString(entry.instance_identifier, instance_identifier.toString()) ||
-                        !CopyString(entry.endpoint, metadata.endpoint.View())) {
-                        return ara::core::Result<void>{
-                            MakeErrorCode(ComErrc::kCommunicationFailure)};
-                    }
-                    return ara::core::Result<void>{};
-                }
-            }
-
-            for (auto& entry : layout->instances) {
-                if (entry.in_use) {
-                    continue;
-                }
-                if (!CopyString(entry.instance_specifier, instance_specifier.View()) ||
-                    !CopyString(entry.instance_identifier, instance_identifier.toString()) ||
-                    !CopyString(entry.endpoint, metadata.endpoint.View())) {
-                    return ara::core::Result<void>{
-                        MakeErrorCode(ComErrc::kCommunicationFailure)};
-                }
+        SemaphoreGuard guard(semaphore.Get());
+        auto* layout = registry_result.Value();
+        for (auto& entry : layout->instances) {
+            if (entry.in_use && ViewString(entry.instance_specifier) == instance_specifier.View()) {
                 entry.binding_type = static_cast<std::uint32_t>(metadata.binding_type);
-                entry.in_use = true;
+                if (!CopyString(entry.instance_identifier, instance_identifier.toString()) ||
+                    !CopyString(entry.endpoint, metadata.endpoint.View())) {
+                    return ara::core::Result<void>{MakeErrorCode(ComErrc::kCommunicationFailure)};
+                }
                 return ara::core::Result<void>{};
             }
+        }
 
-            return ara::core::Result<void>{MakeErrorCode(ComErrc::kMaxSamplesExceeded)};
-        });
+        for (auto& entry : layout->instances) {
+            if (entry.in_use) {
+                continue;
+            }
+            if (!CopyString(entry.instance_specifier, instance_specifier.View()) ||
+                !CopyString(entry.instance_identifier, instance_identifier.toString()) ||
+                !CopyString(entry.endpoint, metadata.endpoint.View())) {
+                return ara::core::Result<void>{MakeErrorCode(ComErrc::kCommunicationFailure)};
+            }
+            entry.binding_type = static_cast<std::uint32_t>(metadata.binding_type);
+            entry.in_use = true;
+            return ara::core::Result<void>{};
+        }
+
+        return ara::core::Result<void>{MakeErrorCode(ComErrc::kMaxSamplesExceeded)};
+    });
 }
 
 ara::core::Result<ara::com::InstanceIdentifierContainer> ComRuntimeState::ResolveInstanceIDs(
@@ -424,8 +419,8 @@ ara::core::Result<ara::com::InstanceIdentifierContainer> ComRuntimeState::Resolv
                     continue;
                 }
                 if (ViewString(entry.instance_specifier) == instance_specifier.View()) {
-                    result.push_back(
-                        ara::com::InstanceIdentifier::Create(ViewString(entry.instance_identifier)));
+                    result.push_back(ara::com::InstanceIdentifier::Create(
+                        ViewString(entry.instance_identifier)));
                 }
             }
 
@@ -435,8 +430,7 @@ ara::core::Result<ara::com::InstanceIdentifierContainer> ComRuntimeState::Resolv
             }
 
             return ara::core::Result<ara::com::InstanceIdentifierContainer>{std::move(result)};
-        }
-    );
+        });
 }
 
 ara::core::Result<void>
