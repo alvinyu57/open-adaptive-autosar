@@ -108,7 +108,7 @@ inline std::optional<TirePressureSample> DeserializeSample(std::string_view text
 }
 
 inline ara::core::Result<TirePressureSample>
-LoadSampleFromJsonFile(const std::filesystem::path& file_path) noexcept {
+LoadSampleFromJsonFile(const std::filesystem::path& file_path) {
     std::ifstream input(file_path);
     if (!input.is_open()) {
         return ara::core::Result<TirePressureSample>{

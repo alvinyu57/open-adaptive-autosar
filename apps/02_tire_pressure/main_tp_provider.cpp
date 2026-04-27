@@ -54,83 +54,95 @@ std::filesystem::path GetDataDirectory() {
 } // namespace
 
 int main(int argc, char* argv[]) {
-    if (!ara::core::Initialize(argc, argv).HasValue()) {
-        return 1;
-    }
-
-    ara::log::Logger logger(std::cout);
-    std::atomic<bool> keep_running{true};
-    auto execution_client = ara::exec::ExecutionClient::Create([&keep_running, &logger]() {
-        logger.Warn("tire_provider", "Received SIGTERM");
-        keep_running.store(false);
-    });
-    if (!execution_client.HasValue()) {
-        return 1;
-    }
-
-    if (!execution_client.Value()
-             .ReportExecutionState(ara::exec::ExecutionState::kRunning)
-             .HasValue()) {
-        return 1;
-    }
-
-    auto manifest_result =
-        openaa::tire_pressure::LoadServiceManifest(OPEN_AA_TIRE_PRESSURE_SERVICE_MANIFEST);
-    if (!manifest_result.HasValue()) {
-        logger.Error("tire_provider", "Failed to load service_instance_manifest.arxml");
-        return 1;
-    }
-
-    openaa::tire_pressure::TirePressureProviderSkeleton skeleton(manifest_result.Value());
-    if (!skeleton.OfferService().HasValue()) {
-        logger.Error("tire_provider", "Failed to offer tire pressure service");
-        return 1;
-    }
-
-    auto managed_execution_client = std::move(execution_client.Value());
-    (void)managed_execution_client;
-
-    while (keep_running.load()) {
-        // read sample from json in data/tire_pressure_data.json
-        std::filesystem::path data_file = GetDataDirectory() / "tire_pressure_data.json";
-        auto sample_result = openaa::tire_pressure::LoadSampleFromJsonFile(data_file);
-
-        if (!sample_result.HasValue()) {
-            logger.Error("tire_provider", "Failed to load tire pressure JSON data");
+    try{
+        if (!ara::core::Initialize(argc, argv).HasValue()) {
             return 1;
         }
 
-        auto sample = sample_result.Value();
-        logger.Info("tire_provider",
-                    std::string("Loaded tire pressure data: ") + DescribeSample(sample));
-
-        sample.timestamp = std::chrono::system_clock::now();
-        if (!skeleton.Publish(sample).HasValue()) {
-            logger.Error("tire_provider", "Failed to publish tire pressure sample");
-            break;
+        ara::log::Logger logger(std::cout);
+        std::atomic<bool> keep_running{true};
+        auto execution_client = ara::exec::ExecutionClient::Create([&keep_running, &logger]() {
+            logger.Warn("tire_provider", "Received SIGTERM");
+            keep_running.store(false);
+        });
+        if (!execution_client.HasValue()) {
+            return 1;
         }
 
-        if (!skeleton.ProcessNextMethodCall().HasValue()) {
-            logger.Warn("tire_provider", "Failed to process request/response call");
+        if (!execution_client.Value()
+                .ReportExecutionState(ara::exec::ExecutionState::kRunning)
+                .HasValue()) {
+            return 1;
         }
 
-        auto one_way_result = skeleton.ProcessNextFireAndForget();
-        if (one_way_result.HasValue() && one_way_result.Value().has_value()) {
-            logger.Warn("tire_provider",
+        auto manifest_result =
+            openaa::tire_pressure::LoadServiceManifest(OPEN_AA_TIRE_PRESSURE_SERVICE_MANIFEST);
+        if (!manifest_result.HasValue()) {
+            logger.Error("tire_provider", "Failed to load service_instance_manifest.arxml");
+            return 1;
+        }
+
+        openaa::tire_pressure::TirePressureProviderSkeleton skeleton(manifest_result.Value());
+        if (!skeleton.OfferService().HasValue()) {
+            logger.Error("tire_provider", "Failed to offer tire pressure service");
+            return 1;
+        }
+
+        auto managed_execution_client = std::move(execution_client.Value());
+        (void)managed_execution_client;
+
+        while (keep_running.load()) {
+            // read sample from json in data/tire_pressure_data.json
+            std::filesystem::path data_file = GetDataDirectory() / "tire_pressure_data.json";
+            auto sample_result = openaa::tire_pressure::LoadSampleFromJsonFile(data_file);
+
+            if (!sample_result.HasValue()) {
+                logger.Error("tire_provider", "Failed to load tire pressure JSON data");
+                return 1;
+            }
+
+            auto sample = sample_result.Value();
+            logger.Info("tire_provider",
+                        std::string("Loaded tire pressure data: ") + DescribeSample(sample));
+
+            sample.timestamp = std::chrono::system_clock::now();
+            if (!skeleton.Publish(sample).HasValue()) {
+                logger.Error("tire_provider", "Failed to publish tire pressure sample");
+                break;
+            }
+
+            if (!skeleton.ProcessNextMethodCall().HasValue()) {
+                logger.Warn("tire_provider", "Failed to process request/response call");
+            }
+
+            auto one_way_result = skeleton.ProcessNextFireAndForget();
+            if (one_way_result.HasValue()) {
+                if (const auto& opt = one_way_result.Value(); opt.has_value()) {
+                    logger.Warn("tire_provider",
                         std::string("Received fire-and-forget notification: ") +
-                            *one_way_result.Value());
+                        *opt);
+                }
+            }
+
+            logger.Info("tire_provider",
+                        "Published tire pressure sample over ara::com shared memory IPC:");
+            logger.Info("tire_provider",
+                        "{FL: " + std::to_string(sample.readings[0].pressure_kpa) +
+                            "kPa, FR: " + std::to_string(sample.readings[1].pressure_kpa) +
+                            "kPa, RL: " + std::to_string(sample.readings[2].pressure_kpa) +
+                            "kPa, RR: " + std::to_string(sample.readings[3].pressure_kpa) + "kPa }");
+            std::this_thread::sleep_for(std::chrono::milliseconds(250));
         }
 
-        logger.Info("tire_provider",
-                    "Published tire pressure sample over ara::com shared memory IPC:");
-        logger.Info("tire_provider",
-                    "{FL: " + std::to_string(sample.readings[0].pressure_kpa) +
-                        "kPa, FR: " + std::to_string(sample.readings[1].pressure_kpa) +
-                        "kPa, RL: " + std::to_string(sample.readings[2].pressure_kpa) +
-                        "kPa, RR: " + std::to_string(sample.readings[3].pressure_kpa) + "kPa }");
-        std::this_thread::sleep_for(std::chrono::milliseconds(250));
+        (void)skeleton.StopOfferService();
+        return ara::core::Deinitialize().HasValue() ? 0 : 1;
     }
-
-    (void)skeleton.StopOfferService();
-    return ara::core::Deinitialize().HasValue() ? 0 : 1;
+    catch(const ara::core::ErrorCode& error){
+        std::cerr << "Error: " << error.Message() << '\n';
+        return EXIT_FAILURE;
+    }
+    catch(...){
+        std::cerr << "An unexpected error occurred.\n";
+        return EXIT_FAILURE;
+    }
 }

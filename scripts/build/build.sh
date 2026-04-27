@@ -81,6 +81,8 @@ done
 if [[ ${BUILD_IN_DOCKER} == "True" ]]; then
     echo "Building in docker container..."
 
+    command_name=$(basename "$0")
+
     CURRENT_HASH=$(sha256sum "${PROJECT_ROOT}/docker/build.Dockerfile" | awk '{print $1}')
     LAST_HASH=$(cat .dockerfile.hash 2>/dev/null || echo "")
 
@@ -111,14 +113,11 @@ if [[ ${BUILD_IN_DOCKER} == "True" ]]; then
         -w /workspace \
         openaa-build \
         bash -lc "
-            ./scripts/build/build.sh ${args[@]}
+            ./scripts/build/$command_name ${args[@]}
         "
     
     exit $?
 fi
-
-# Building natively...
-echo "Building natively..."
 
 rm -rf build/${CONAN_BUILD_TYPE}
 

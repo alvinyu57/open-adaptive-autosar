@@ -29,6 +29,7 @@
 
 #include "ara/core/initialization.h"
 #include "ara/log/logger.hpp"
+#include "ara/exec/execution_client.h"
 
 extern char** environ;
 

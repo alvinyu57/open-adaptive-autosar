@@ -21,7 +21,7 @@ inline std::string BuildAbortMessage() {
 
 template <typename... Args>
 std::string BuildAbortMessage(Args&&... args) {
-    std::ostringstream stream;
+    std::ostringstream stream{};
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-array-to-pointer-decay)
     (stream << ... << std::forward<Args>(args));
     return stream.str();

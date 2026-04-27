@@ -18,9 +18,14 @@ public:
     explicit TirePressureConsumerProxy(TirePressureServiceManifest manifest)
         : manifest_(std::move(manifest)) {}
 
-    ~TirePressureConsumerProxy() {
+    ~TirePressureConsumerProxy() noexcept {
         StopSubscription();
     }
+
+    TirePressureConsumerProxy(const TirePressureConsumerProxy&) = delete;
+    TirePressureConsumerProxy& operator=(const TirePressureConsumerProxy&) = delete;
+    TirePressureConsumerProxy(TirePressureConsumerProxy&&) = default;
+    TirePressureConsumerProxy& operator=(TirePressureConsumerProxy&&) = default;
 
     ara::core::Result<void> Connect() noexcept {
         auto resolve_result = ara::com::runtime::ResolveInstanceIDs(manifest_.instance_specifier);
@@ -55,14 +60,17 @@ public:
             while (running_.load()) {
                 auto event_result = ara::com::runtime::internal::GetNewEvent(
                     manifest_.event_channel, last_event_sequence_);
-                if (event_result.HasValue() && event_result.Value().has_value()) {
-                    auto sample = DeserializeSample(event_result.Value()->View());
-                    if (sample.has_value()) {
-                        {
-                            std::lock_guard<std::mutex> lock(mutex_);
-                            cached_sample_ = std::move(sample);
+                if (event_result.HasValue()) {
+                    const auto& opt = event_result.Value();
+                    if (opt.has_value()) {
+                        auto sample = DeserializeSample(opt->View());
+                        if (sample.has_value()) {
+                            {
+                                std::lock_guard<std::mutex> lock(mutex_);
+                                cached_sample_ = std::move(sample);
+                            }
+                            handler();
                         }
-                        handler();
                     }
                 }
 
@@ -86,10 +94,15 @@ public:
             return ara::com::SamplePtr<TirePressureSample>(nullptr);
         }
 
-        return ara::com::SamplePtr<TirePressureSample>(new TirePressureSample(*cached_sample_));
+        try {
+            return ara::com::SamplePtr<TirePressureSample>(
+                new TirePressureSample(*cached_sample_));
+        } catch (const std::bad_alloc&) {
+            return ara::com::SamplePtr<TirePressureSample>(nullptr);
+        }
     }
 
-    ara::core::Result<TirePressureSample> GetLatestByRequest() noexcept {
+    ara::core::Result<TirePressureSample> GetLatestByRequest() {
         auto response_result =
             ara::com::runtime::internal::CallMethod(manifest_.method_channel,
                                                     SerializeMethodRequest("GetLatestPressure"),

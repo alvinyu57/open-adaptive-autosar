@@ -31,7 +31,7 @@ jobs:
         run: docker version
 
       - name: Build project image
-        run: ./scripts/build/build.sh --build-tests --docker
+        run: ./scripts/build/build.sh --build-apps --build-tests --docker
 
       - name: Run clang-format check
         id: clang_format
@@ -131,7 +131,7 @@ jobs:
         run: docker version
 
       - name: Build project with tests enabled
-        run: ./scripts/build/build.sh --build-tests --docker
+        run: ./scripts/build/build.sh --build-apps --build-tests --docker
 
       - name: Run unit tests with CTest
         id: ctest_unit
@@ -186,7 +186,7 @@ jobs:
         run: docker version
 
       - name: Build project with tests enabled
-        run: ./scripts/build/build.sh --build-tests --docker
+        run: ./scripts/build/build.sh --build-apps --build-tests --docker
 
       - name: Run smoke tests with CTest
         id: ctest_smoke
