@@ -2,19 +2,26 @@
 
 set -euo pipefail
 
-if [[ "${1:-}" == "--docker" && "${IN_DOCKER:-}" != "True" ]]; then
-    # Ensure it is built
-    ./scripts/build/build.sh --build-apps --docker
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
-    export USER_ID=$(id -u)
-    export GROUP_ID=$(id -g)
-    docker compose build runtime
-    docker compose run --rm -e IN_DOCKER=True runtime "$0" "${@:2}"
+if [[ "${1:-}" == "--docker" && "${IN_DOCKER:-}" != "True" ]]; then
+    
+    command_name=$(basename "$0")
+
+    ${PROJECT_ROOT}/scripts/build/runtime.sh
+
+    docker run --rm \
+        -v "${PROJECT_ROOT}:/workspace" \
+        -w /workspace \
+        openaa-runtime:1.0.0 \
+        bash -lc "
+            ./scripts/demo/$command_name
+        "
+        
     exit $?
 fi
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 BUILD_ROOT="${PROJECT_ROOT}/build/Release"
 
 # Run the tire pressure apps in the background
