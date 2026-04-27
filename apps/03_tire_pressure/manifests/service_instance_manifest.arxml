@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<AUTOSAR
+    xmlns="http://autosar.org/schema/r4.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://autosar.org/schema/r4.0 AUTOSAR_00054.xsd">
+  <AR-PACKAGES>
+    <AR-PACKAGE>
+      <SHORT-NAME>ServiceInterfaceDeployments</SHORT-NAME>
+      <ELEMENTS>
+        <USER-DEFINED-SERVICE-INTERFACE-DEPLOYMENT>
+          <SHORT-NAME>TirePressureServiceDeployment</SHORT-NAME>
+          <ADMIN-DATA>
+            <SDGS>
+              <SDG GID="OPENAA">
+                <SD GID="SERVICE-IDENTIFIER">openaa.examples.TirePressureService</SD>
+                <SD GID="TRANSPORT-BINDING">SOMEIP</SD>
+                <SD GID="SOMEIP-SERVICE-ID">0x1234</SD>
+              </SDG>
+            </SDGS>
+          </ADMIN-DATA>
+          <EVENT-DEPLOYMENTS>
+            <USER-DEFINED-EVENT-DEPLOYMENT>
+              <SHORT-NAME>TirePressureEventDeployment</SHORT-NAME>
+              <ADMIN-DATA>
+                <SDGS>
+                  <SDG GID="OPENAA">
+                    <SD GID="CHANNEL">/openaa_tp_service_event</SD>
+                    <SD GID="SOMEIP-EVENT-ID">0x8001</SD>
+                    <SD GID="SOMEIP-EVENTGROUP-ID">0x0001</SD>
+                  </SDG>
+                </SDGS>
+              </ADMIN-DATA>
+              <EVENT-REF DEST="VARIABLE-DATA-PROTOTYPE">/PortInterfaces/TirePressureServiceInterface/TirePressureEvent</EVENT-REF>
+            </USER-DEFINED-EVENT-DEPLOYMENT>
+          </EVENT-DEPLOYMENTS>
+          <METHOD-DEPLOYMENTS>
+            <USER-DEFINED-METHOD-DEPLOYMENT>
+              <SHORT-NAME>GetLatestPressureDeployment</SHORT-NAME>
+              <ADMIN-DATA>
+                <SDGS>
+                  <SDG GID="OPENAA">
+                    <SD GID="COMMUNICATION-MODE">REQUEST-RESPONSE</SD>
+                    <SD GID="CHANNEL">/openaa_tp_service_method</SD>
+                    <SD GID="SOMEIP-METHOD-ID">0x0421</SD>
+                  </SDG>
+                </SDGS>
+              </ADMIN-DATA>
+              <METHOD-REF DEST="CLIENT-SERVER-OPERATION">/PortInterfaces/TirePressureServiceInterface/GetLatestPressure</METHOD-REF>
+            </USER-DEFINED-METHOD-DEPLOYMENT>
+            <USER-DEFINED-METHOD-DEPLOYMENT>
+              <SHORT-NAME>LowPressureAlarmDeployment</SHORT-NAME>
+              <ADMIN-DATA>
+                <SDGS>
+                  <SDG GID="OPENAA">
+                    <SD GID="COMMUNICATION-MODE">FIRE-AND-FORGET</SD>
+                    <SD GID="CHANNEL">/openaa_tp_service_oneway</SD>
+                    <SD GID="SOMEIP-METHOD-ID">0x0422</SD>
+                  </SDG>
+                </SDGS>
+              </ADMIN-DATA>
+              <METHOD-REF DEST="CLIENT-SERVER-OPERATION">/PortInterfaces/TirePressureServiceInterface/LowPressureAlarm</METHOD-REF>
+            </USER-DEFINED-METHOD-DEPLOYMENT>
+          </METHOD-DEPLOYMENTS>
+          <SERVICE-INTERFACE-REF DEST="SERVICE-INTERFACE">/PortInterfaces/TirePressureServiceInterface</SERVICE-INTERFACE-REF>
+        </USER-DEFINED-SERVICE-INTERFACE-DEPLOYMENT>
+      </ELEMENTS>
+    </AR-PACKAGE>
+
+    <AR-PACKAGE>
+      <SHORT-NAME>ServiceInstances</SHORT-NAME>
+      <ELEMENTS>
+        <PROVIDED-USER-DEFINED-SERVICE-INSTANCE>
+          <SHORT-NAME>TirePressureProvidedInstance</SHORT-NAME>
+          <ADMIN-DATA>
+            <SDGS>
+              <SDG GID="OPENAA">
+                <SD GID="INSTANCE-SPECIFIER">/OpenAA/Applications/TirePressure/TirePressureService</SD>
+                <SD GID="INSTANCE-IDENTIFIER">openaa/tire-pressure/service</SD>
+                <SD GID="SOMEIP-INSTANCE-ID">0x5678</SD>
+              </SDG>
+            </SDGS>
+          </ADMIN-DATA>
+          <SERVICE-INTERFACE-DEPLOYMENT-REF DEST="USER-DEFINED-SERVICE-INTERFACE-DEPLOYMENT">/ServiceInterfaceDeployments/TirePressureServiceDeployment</SERVICE-INTERFACE-DEPLOYMENT-REF>
+        </PROVIDED-USER-DEFINED-SERVICE-INSTANCE>
+        <REQUIRED-USER-DEFINED-SERVICE-INSTANCE>
+          <SHORT-NAME>TirePressureRequiredInstance</SHORT-NAME>
+          <ADMIN-DATA>
+            <SDGS>
+              <SDG GID="OPENAA">
+                <SD GID="INSTANCE-SPECIFIER">/OpenAA/Applications/TirePressure/TirePressureService</SD>
+                <SD GID="INSTANCE-IDENTIFIER">openaa/tire-pressure/service</SD>
+                <SD GID="SOMEIP-INSTANCE-ID">0x5678</SD>
+              </SDG>
+            </SDGS>
+          </ADMIN-DATA>
+          <SERVICE-INTERFACE-DEPLOYMENT-REF DEST="USER-DEFINED-SERVICE-INTERFACE-DEPLOYMENT">/ServiceInterfaceDeployments/TirePressureServiceDeployment</SERVICE-INTERFACE-DEPLOYMENT-REF>
+        </REQUIRED-USER-DEFINED-SERVICE-INSTANCE>
+      </ELEMENTS>
+    </AR-PACKAGE>
+  </AR-PACKAGES>
+</AUTOSAR>

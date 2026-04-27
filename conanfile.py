@@ -5,7 +5,7 @@ from conan.tools.cmake import CMake, CMakeDeps, CMakeToolchain, cmake_layout
 
 class AdaptiveAutosarConan(ConanFile):
     name = "adaptive-autosar"
-    version = "0.3.0"
+    version = "0.4.0"
 
     settings = "os", "compiler", "build_type", "arch"
 

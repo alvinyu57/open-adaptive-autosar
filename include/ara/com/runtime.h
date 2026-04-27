@@ -20,6 +20,7 @@ namespace internal {
 enum class BindingType : std::uint8_t {
     kIpc = 0,
     kDds = 1,
+    kSomeIp = 2,
 };
 
 struct BindingMetadata final {
@@ -51,32 +52,39 @@ ara::core::Result<ara::core::Vector<BindingMetadata>> FindServices(
     const ara::com::InstanceIdentifier& instance_identifier) noexcept;
 
 ara::core::Result<void> PublishEvent(
+    BindingType binding,
     std::string_view channel_name,
     std::string_view payload) noexcept;
 
 ara::core::Result<std::optional<ara::core::String>> GetNewEvent(
+    BindingType binding,
     std::string_view channel_name,
     std::uint64_t& last_seen_sequence) noexcept;
 
 ara::core::Result<ara::core::String> CallMethod(
+    BindingType binding,
     std::string_view channel_name,
     std::string_view payload,
     std::chrono::milliseconds timeout) noexcept;
 
 ara::core::Result<std::optional<ChannelMessage>> TakeMethodCall(
+    BindingType binding,
     std::string_view channel_name,
     std::uint64_t& last_seen_sequence) noexcept;
 
 ara::core::Result<void> SendMethodResponse(
+    BindingType binding,
     std::string_view channel_name,
     std::uint64_t correlation_id,
     std::string_view payload) noexcept;
 
 ara::core::Result<void> SendFireAndForget(
+    BindingType binding,
     std::string_view channel_name,
     std::string_view payload) noexcept;
 
 ara::core::Result<std::optional<ara::core::String>> TakeFireAndForget(
+    BindingType binding,
     std::string_view channel_name,
     std::uint64_t& last_seen_sequence) noexcept;
 

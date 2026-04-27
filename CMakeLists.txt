@@ -8,7 +8,7 @@ project(open_adaptive_autosar
     VERSION ${OPEN_AA_VERSION}
     LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -65,6 +65,21 @@ add_custom_command(
             ${CMAKE_BINARY_DIR}/manifests/platform_execution_manifest.json
     DEPENDS ${CMAKE_SOURCE_DIR}/src/manifests/execution_manifest.arxml
 )
+
+set(ENABLE_MULTIPLE_ROUTING_MANAGERS OFF CACHE BOOL "vsomeip" FORCE)
+set(ENABLE_SIGNAL_HANDLING OFF CACHE BOOL "vsomeip" FORCE)
+set(TEST_IP_MASTER OFF CACHE BOOL "vsomeip" FORCE)
+set(TEST_IP_SLAVE OFF CACHE BOOL "vsomeip" FORCE)
+set(Boost_VERSION_MACRO 108300)
+add_subdirectory(third_party/vsomeip)
+
+# Bypass vsomeip's strict -Werror for specific warnings that fail on newer GCC + Boost
+set(VSOMEIP_TARGETS vsomeip3 vsomeip3-internal vsomeip3-sd vsomeip3-sd-internal vsomeip3-e2e vsomeip3-e2e-internal)
+foreach(target ${VSOMEIP_TARGETS})
+    if(TARGET ${target})
+        target_compile_options(${target} PRIVATE "-Wno-error=maybe-uninitialized")
+    endif()
+endforeach()
 
 add_subdirectory(src)
 

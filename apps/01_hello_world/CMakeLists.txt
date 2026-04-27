@@ -18,8 +18,6 @@ target_link_libraries(openaa_example_hello_world_runner
         ara_exec_lib
 )
 
-target_compile_features(openaa_example_hello_world_runner PRIVATE cxx_std_20)
-
 add_custom_command(
     TARGET  openaa_example_hello_world_runner PRE_BUILD
     COMMAND python3 ${CMAKE_SOURCE_DIR}/scripts/manifests/verify_arxml.py

@@ -38,41 +38,41 @@ FindServices(const ara::com::ServiceIdentifierType& service_id,
     return ComRuntimeState::Instance().FindServices(service_id, instance_identifier);
 }
 
-ara::core::Result<void> PublishEvent(std::string_view channel_name,
+ara::core::Result<void> PublishEvent(BindingType binding, std::string_view channel_name,
                                      std::string_view payload) noexcept {
-    return SharedMemoryEventChannel::Publish(channel_name, payload);
+    return ComRuntimeState::Instance().PublishEvent(binding, channel_name, payload);
 }
 
 ara::core::Result<std::optional<ara::core::String>>
-GetNewEvent(std::string_view channel_name, std::uint64_t& last_seen_sequence) noexcept {
-    return SharedMemoryEventChannel::ReadIfNew(channel_name, last_seen_sequence);
+GetNewEvent(BindingType binding, std::string_view channel_name, std::uint64_t& last_seen_sequence) noexcept {
+    return ComRuntimeState::Instance().GetNewEvent(binding, channel_name, last_seen_sequence);
 }
 
-ara::core::Result<ara::core::String> CallMethod(std::string_view channel_name,
+ara::core::Result<ara::core::String> CallMethod(BindingType binding, std::string_view channel_name,
                                                 std::string_view payload,
                                                 std::chrono::milliseconds timeout) noexcept {
-    return SharedMemoryMethodChannel::Call(channel_name, payload, timeout);
+    return ComRuntimeState::Instance().CallMethod(binding, channel_name, payload, timeout);
 }
 
 ara::core::Result<std::optional<ChannelMessage>>
-TakeMethodCall(std::string_view channel_name, std::uint64_t& last_seen_sequence) noexcept {
-    return SharedMemoryMethodChannel::TakeRequest(channel_name, last_seen_sequence);
+TakeMethodCall(BindingType binding, std::string_view channel_name, std::uint64_t& last_seen_sequence) noexcept {
+    return ComRuntimeState::Instance().TakeMethodCall(binding, channel_name, last_seen_sequence);
 }
 
-ara::core::Result<void> SendMethodResponse(std::string_view channel_name,
+ara::core::Result<void> SendMethodResponse(BindingType binding, std::string_view channel_name,
                                            std::uint64_t correlation_id,
                                            std::string_view payload) noexcept {
-    return SharedMemoryMethodChannel::SendResponse(channel_name, correlation_id, payload);
+    return ComRuntimeState::Instance().SendMethodResponse(binding, channel_name, correlation_id, payload);
 }
 
-ara::core::Result<void> SendFireAndForget(std::string_view channel_name,
+ara::core::Result<void> SendFireAndForget(BindingType binding, std::string_view channel_name,
                                           std::string_view payload) noexcept {
-    return SharedMemoryFireAndForgetChannel::Send(channel_name, payload);
+    return ComRuntimeState::Instance().SendFireAndForget(binding, channel_name, payload);
 }
 
 ara::core::Result<std::optional<ara::core::String>>
-TakeFireAndForget(std::string_view channel_name, std::uint64_t& last_seen_sequence) noexcept {
-    return SharedMemoryFireAndForgetChannel::Take(channel_name, last_seen_sequence);
+TakeFireAndForget(BindingType binding, std::string_view channel_name, std::uint64_t& last_seen_sequence) noexcept {
+    return ComRuntimeState::Instance().TakeFireAndForget(binding, channel_name, last_seen_sequence);
 }
 
 } // namespace internal

@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<AUTOSAR
+    xmlns="http://autosar.org/schema/r4.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://autosar.org/schema/r4.0 AUTOSAR_00054.xsd">
+  <AR-PACKAGES>
+    <AR-PACKAGE>
+      <SHORT-NAME>Executables</SHORT-NAME>
+      <ELEMENTS>
+        <EXECUTABLE>
+          <SHORT-NAME>openaa_someip_tire_pressure_provider</SHORT-NAME>
+          <REPORTING-BEHAVIOR>REPORTS-EXECUTION-STATE</REPORTING-BEHAVIOR>
+          <VERSION>1.0.0</VERSION>
+        </EXECUTABLE>
+        <EXECUTABLE>
+          <SHORT-NAME>openaa_someip_tire_pressure_consumer</SHORT-NAME>
+          <REPORTING-BEHAVIOR>REPORTS-EXECUTION-STATE</REPORTING-BEHAVIOR>
+          <VERSION>1.0.0</VERSION>
+        </EXECUTABLE>
+      </ELEMENTS>
+    </AR-PACKAGE>
+
+    <AR-PACKAGE>
+      <SHORT-NAME>Processes</SHORT-NAME>
+      <ELEMENTS>
+        <PROCESS>
+          <SHORT-NAME>SomeIpTirePressureProviderProcess</SHORT-NAME>
+          <EXECUTABLE-REFS>
+            <EXECUTABLE-REF DEST="EXECUTABLE">/Executables/openaa_someip_tire_pressure_provider</EXECUTABLE-REF>
+          </EXECUTABLE-REFS>
+          <NUMBER-OF-RESTART-ATTEMPTS>1</NUMBER-OF-RESTART-ATTEMPTS>
+          <PRE-MAPPING>false</PRE-MAPPING>
+          <PROCESS-STATE-MACHINE>
+            <SHORT-NAME>SomeIpTirePressureProviderStateMachine</SHORT-NAME>
+            <TYPE-TREF DEST="MODE-DECLARATION-GROUP">/ModeDeclarationGroups/MachineStates</TYPE-TREF>
+          </PROCESS-STATE-MACHINE>
+          <STATE-DEPENDENT-STARTUP-CONFIGS>
+            <STATE-DEPENDENT-STARTUP-CONFIG>
+              <FUNCTION-GROUP-STATE-IREFS>
+                <FUNCTION-GROUP-STATE-IREF>
+                  <CONTEXT-MODE-DECLARATION-GROUP-PROTOTYPE-REF DEST="MODE-DECLARATION-GROUP-PROTOTYPE">/FunctionGroupSets/MachineFGSet/MachineFG</CONTEXT-MODE-DECLARATION-GROUP-PROTOTYPE-REF>
+                  <TARGET-MODE-DECLARATION-REF DEST="MODE-DECLARATION">/ModeDeclarationGroups/MachineStates/Running</TARGET-MODE-DECLARATION-REF>
+                </FUNCTION-GROUP-STATE-IREF>
+              </FUNCTION-GROUP-STATE-IREFS>
+              <STARTUP-CONFIG-REF DEST="STARTUP-CONFIG">/StartupConfigs/SomeIpTirePressureProviderStartupConfig</STARTUP-CONFIG-REF>
+            </STATE-DEPENDENT-STARTUP-CONFIG>
+          </STATE-DEPENDENT-STARTUP-CONFIGS>
+        </PROCESS>
+        <PROCESS>
+          <SHORT-NAME>SomeIpTirePressureConsumerProcess</SHORT-NAME>
+          <EXECUTABLE-REFS>
+            <EXECUTABLE-REF DEST="EXECUTABLE">/Executables/openaa_someip_tire_pressure_consumer</EXECUTABLE-REF>
+          </EXECUTABLE-REFS>
+          <NUMBER-OF-RESTART-ATTEMPTS>1</NUMBER-OF-RESTART-ATTEMPTS>
+          <PRE-MAPPING>false</PRE-MAPPING>
+          <PROCESS-STATE-MACHINE>
+            <SHORT-NAME>SomeIpTirePressureConsumerStateMachine</SHORT-NAME>
+            <TYPE-TREF DEST="MODE-DECLARATION-GROUP">/ModeDeclarationGroups/MachineStates</TYPE-TREF>
+          </PROCESS-STATE-MACHINE>
+          <STATE-DEPENDENT-STARTUP-CONFIGS>
+            <STATE-DEPENDENT-STARTUP-CONFIG>
+              <FUNCTION-GROUP-STATE-IREFS>
+                <FUNCTION-GROUP-STATE-IREF>
+                  <CONTEXT-MODE-DECLARATION-GROUP-PROTOTYPE-REF DEST="MODE-DECLARATION-GROUP-PROTOTYPE">/FunctionGroupSets/MachineFGSet/MachineFG</CONTEXT-MODE-DECLARATION-GROUP-PROTOTYPE-REF>
+                  <TARGET-MODE-DECLARATION-REF DEST="MODE-DECLARATION">/ModeDeclarationGroups/MachineStates/Running</TARGET-MODE-DECLARATION-REF>
+                </FUNCTION-GROUP-STATE-IREF>
+              </FUNCTION-GROUP-STATE-IREFS>
+              <STARTUP-CONFIG-REF DEST="STARTUP-CONFIG">/StartupConfigs/SomeIpTirePressureConsumerStartupConfig</STARTUP-CONFIG-REF>
+            </STATE-DEPENDENT-STARTUP-CONFIG>
+          </STATE-DEPENDENT-STARTUP-CONFIGS>
+        </PROCESS>
+      </ELEMENTS>
+    </AR-PACKAGE>
+
+    <AR-PACKAGE>
+      <SHORT-NAME>StartupConfigs</SHORT-NAME>
+      <ELEMENTS>
+        <STARTUP-CONFIG>
+          <SHORT-NAME>SomeIpTirePressureProviderStartupConfig</SHORT-NAME>
+          <ENVIRONMENT-VARIABLES>
+            <TAG-WITH-OPTIONAL-VALUE>
+              <KEY>OPENAA_EXAMPLE_PROFILE</KEY>
+              <VALUE>tire_pressure_provider</VALUE>
+            </TAG-WITH-OPTIONAL-VALUE>
+          </ENVIRONMENT-VARIABLES>
+          <PERMISSION-TO-CREATE-CHILD-PROCESS>false</PERMISSION-TO-CREATE-CHILD-PROCESS>
+          <PROCESS-ARGUMENTS>
+            <PROCESS-ARGUMENT>
+              <ARGUMENT>--role=provider</ARGUMENT>
+            </PROCESS-ARGUMENT>
+          </PROCESS-ARGUMENTS>
+          <SCHEDULING-POLICY>SCHEDULING-POLICY-FIFO</SCHEDULING-POLICY>
+          <SCHEDULING-PRIORITY>15</SCHEDULING-PRIORITY>
+          <TERMINATION-BEHAVIOR>PROCESS-IS-SELF-TERMINATING</TERMINATION-BEHAVIOR>
+          <TIMEOUT>
+            <ENTER-TIMEOUT-VALUE>5</ENTER-TIMEOUT-VALUE>
+            <EXIT-TIMEOUT-VALUE>5</EXIT-TIMEOUT-VALUE>
+          </TIMEOUT>
+        </STARTUP-CONFIG>
+        <STARTUP-CONFIG>
+          <SHORT-NAME>SomeIpTirePressureConsumerStartupConfig</SHORT-NAME>
+          <ENVIRONMENT-VARIABLES>
+            <TAG-WITH-OPTIONAL-VALUE>
+              <KEY>OPENAA_EXAMPLE_PROFILE</KEY>
+              <VALUE>tire_pressure_consumer</VALUE>
+            </TAG-WITH-OPTIONAL-VALUE>
+          </ENVIRONMENT-VARIABLES>
+          <PERMISSION-TO-CREATE-CHILD-PROCESS>false</PERMISSION-TO-CREATE-CHILD-PROCESS>
+          <PROCESS-ARGUMENTS>
+            <PROCESS-ARGUMENT>
+              <ARGUMENT>--role=consumer</ARGUMENT>
+            </PROCESS-ARGUMENT>
+          </PROCESS-ARGUMENTS>
+          <SCHEDULING-POLICY>SCHEDULING-POLICY-FIFO</SCHEDULING-POLICY>
+          <SCHEDULING-PRIORITY>15</SCHEDULING-PRIORITY>
+          <TERMINATION-BEHAVIOR>PROCESS-IS-SELF-TERMINATING</TERMINATION-BEHAVIOR>
+          <TIMEOUT>
+            <ENTER-TIMEOUT-VALUE>5</ENTER-TIMEOUT-VALUE>
+            <EXIT-TIMEOUT-VALUE>5</EXIT-TIMEOUT-VALUE>
+          </TIMEOUT>
+        </STARTUP-CONFIG>
+      </ELEMENTS>
+    </AR-PACKAGE>
+
+  </AR-PACKAGES>
+</AUTOSAR>

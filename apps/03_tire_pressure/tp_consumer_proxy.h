@@ -71,7 +71,7 @@ public:
 
     ara::core::Result<std::optional<TirePressureSample>> GetNewSample() noexcept {
         auto event_result = ara::com::runtime::internal::GetNewEvent(
-            ara::com::runtime::internal::BindingType::kIpc, manifest_.event_channel, last_event_sequence_);
+            ara::com::runtime::internal::BindingType::kSomeIp, manifest_.event_channel, last_event_sequence_);
         if (event_result.HasValue() && event_result.Value().has_value()) {
             auto sample = DeserializeSample(event_result.Value()->View());
             return ara::core::Result<std::optional<TirePressureSample>>{std::move(sample)};
@@ -98,7 +98,7 @@ public:
     ara::core::Result<TirePressureSample> GetLatestPressure(
         std::chrono::milliseconds timeout = std::chrono::milliseconds(500)) noexcept {
         auto method_result = ara::com::runtime::internal::CallMethod(
-            ara::com::runtime::internal::BindingType::kIpc, manifest_.method_channel, "GetLatestPressure", timeout);
+            ara::com::runtime::internal::BindingType::kSomeIp, manifest_.method_channel, "GetLatestPressure", timeout);
         if (!method_result.HasValue()) {
             return ara::core::Result<TirePressureSample>{method_result.Error()};
         }
@@ -115,7 +115,7 @@ public:
     ara::core::Result<void>
     SendLowPressureAlarm(std::string_view alert_message) noexcept {
         return ara::com::runtime::internal::SendFireAndForget(
-            ara::com::runtime::internal::BindingType::kIpc, manifest_.fire_and_forget_channel,
+            ara::com::runtime::internal::BindingType::kSomeIp, manifest_.fire_and_forget_channel,
             SerializeFireAndForgetMessage("Alert", alert_message));
     }
 

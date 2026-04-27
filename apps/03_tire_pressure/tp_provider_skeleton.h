@@ -36,12 +36,12 @@ public:
 
     ara::core::Result<void> Publish(const TirePressureSample& sample) noexcept {
         latest_sample_ = sample;
-        return ara::com::runtime::internal::PublishEvent(ara::com::runtime::internal::BindingType::kIpc, manifest_.event_channel,
+        return ara::com::runtime::internal::PublishEvent(ara::com::runtime::internal::BindingType::kSomeIp, manifest_.event_channel,
                                                          SerializeSample(sample));
     }
 
     ara::core::Result<void> ProcessNextMethodCall() noexcept {
-        auto request_result = ara::com::runtime::internal::TakeMethodCall(ara::com::runtime::internal::BindingType::kIpc, manifest_.method_channel,
+        auto request_result = ara::com::runtime::internal::TakeMethodCall(ara::com::runtime::internal::BindingType::kSomeIp, manifest_.method_channel,
                                                                           last_method_sequence_);
         if (!request_result.HasValue()) {
             return ara::core::Result<void>{request_result.Error()};
@@ -54,16 +54,16 @@ public:
         if (request.payload.View() == "GetLatestPressure") {
             const auto response = SerializeSample(latest_sample_.value_or(TirePressureSample{}));
             return ara::com::runtime::internal::SendMethodResponse(
-                ara::com::runtime::internal::BindingType::kIpc, manifest_.method_channel, request.correlation_id, response);
+                ara::com::runtime::internal::BindingType::kSomeIp, manifest_.method_channel, request.correlation_id, response);
         }
 
         return ara::com::runtime::internal::SendMethodResponse(
-            ara::com::runtime::internal::BindingType::kIpc, manifest_.method_channel, request.correlation_id, "{}");
+            ara::com::runtime::internal::BindingType::kSomeIp, manifest_.method_channel, request.correlation_id, "{}");
     }
 
     ara::core::Result<std::optional<std::string>> ProcessNextFireAndForget() noexcept {
         auto one_way_result = ara::com::runtime::internal::TakeFireAndForget(
-            ara::com::runtime::internal::BindingType::kIpc, manifest_.fire_and_forget_channel, last_fire_and_forget_sequence_);
+            ara::com::runtime::internal::BindingType::kSomeIp, manifest_.fire_and_forget_channel, last_fire_and_forget_sequence_);
         if (!one_way_result.HasValue()) {
             return ara::core::Result<std::optional<std::string>>{one_way_result.Error()};
         }

@@ -1,0 +1,9 @@
+{
+  "timestamp": "2026-04-07T08:00:00Z",
+  "tires": [
+    {"position": "front_left", "pressureKPa": 120},
+    {"position": "front_right", "pressureKPa": 104},
+    {"position": "rear_left", "pressureKPa": 107},
+    {"position": "rear_right", "pressureKPa": 101}
+  ]
+}
