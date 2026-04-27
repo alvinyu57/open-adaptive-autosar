@@ -31,7 +31,7 @@ jobs:
         run: docker version
 
       - name: Build project image
-        run: docker build --build-arg USER_ID="$(id -u)" --build-arg GROUP_ID="$(id -g)" -f Dockerfile -t openaa-build .
+        run: ./scripts/build/build.sh --build-tests --docker
 
       - name: Run clang-format check
         id: clang_format
