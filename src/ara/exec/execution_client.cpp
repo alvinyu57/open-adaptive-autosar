@@ -104,7 +104,7 @@ ara::core::Result<void> ExecutionClient::ReportExecutionState(ExecutionState sta
                                    payload.data(),
                                    payload.size(),
                                    0,
-                                   std::bit_cast<const sockaddr*>(&address),
+                                   reinterpret_cast<const sockaddr*>(&address),
                                    sizeof(address));
         close(socket_fd);
         if (result == -1) {

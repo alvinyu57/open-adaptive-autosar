@@ -1,0 +1,9 @@
+services:
+  openaa-build:
+    image: openaa-build:1.0.0
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        USER_ID: ${USER_ID}
+        GROUP_ID: ${GROUP_ID}

@@ -714,7 +714,7 @@ private:
 
         unlink(report_socket_path_.c_str());
         if (bind(report_socket_fd_,
-                 std::bit_cast<const sockaddr*>(&address),
+                 reinterpret_cast<const sockaddr*>(&address),
                  static_cast<socklen_t>(offsetof(sockaddr_un, sun_path) +
                                         report_socket_path_.size() + 1U)) == -1) {
             logger_.Error("OPENAA_EM",

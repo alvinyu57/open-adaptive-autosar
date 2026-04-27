@@ -26,8 +26,6 @@ target_link_libraries(openaa_core_unit_test
         ara_log_lib
 )
 
-target_compile_features(openaa_core_unit_test PRIVATE cxx_std_20)
-
 gtest_discover_tests(
     openaa_core_unit_test
     DISCOVERY_MODE PRE_TEST

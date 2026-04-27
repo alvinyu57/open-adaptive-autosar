@@ -80,40 +80,14 @@ done
 if [[ ${BUILD_IN_DOCKER} == "True" ]]; then
     echo "Building in docker container..."
 
-    # check if docker image already exists to avoid unnecessary rebuilds
-    if [[ -n "$(docker images -q openaa-build:latest 2> /dev/null)" ]]; then
-        echo "Docker image 'openaa-build:latest' already exists, skipping build."
-    else
-        echo "Building Docker image 'openaa-build:latest'..."
-
-        docker build \
-            --build-arg USER_ID="$(id -u)" \
-            --build-arg GROUP_ID="$(id -g)" \
-            -f "${PROJECT_ROOT}/Dockerfile" \
-            -t openaa-build .
-    fi
+    USER_ID=$(id -u) GROUP_ID=$(id -g) docker compose up
 
     docker run --rm \
         -v "${PROJECT_ROOT}:/workspace" \
         -w /workspace \
         openaa-build \
         bash -lc "
-            rm -rf build/${CONAN_BUILD_TYPE} &&
-
-            conan profile detect --force && 
-
-            conan install . --output-folder=build --build=missing \
-                -s build_type=${CONAN_BUILD_TYPE} \
-                -o *:build_apps=${BUILD_APPS} \
-                -o *:build_tests=${BUILD_TESTS} \
-                ${CONAN_OPTIONS} &&
-
-            echo 'Generated preset values:' &&
-            sed -n '/cacheVariables/,/}/p' build/${CONAN_BUILD_TYPE}/generators/CMakePresets.json &&
-
-            conan build . --output-folder=build \
-                -o *:build_apps=${BUILD_APPS} \
-                -o *:build_tests=${BUILD_TESTS}
+            ./scripts/build/build.sh $*
         "
 
 

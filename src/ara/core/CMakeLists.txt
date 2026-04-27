@@ -15,5 +15,3 @@ target_link_libraries(ara_core_lib
 )
 
 set_target_properties(ara_core_lib PROPERTIES OUTPUT_NAME ara_core)
-
-target_compile_features(ara_core_lib PUBLIC cxx_std_20)

@@ -87,8 +87,8 @@ bool CopyString(std::array<char, N>& destination, std::string_view source) {
     std::memcpy(destination.data(), source.data(), source.size());
     return true;
 }
-
-std::string_view ViewString(const auto& source) {
+template <typename T>
+std::string_view ViewString(const T& source) {
     return std::string_view(source.data(), ::strnlen(source.data(), source.size()));
 }
 
