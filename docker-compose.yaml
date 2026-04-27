@@ -1,9 +1,24 @@
 services:
-  openaa-build:
+  build:
     image: openaa-build:1.0.0
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: docker/Dockerfile.build
       args:
-        USER_ID: ${USER_ID}
-        GROUP_ID: ${GROUP_ID}
+        USER_ID: ${USER_ID:-1000}
+        GROUP_ID: ${GROUP_ID:-1000}
+    volumes:
+      - .:/workspace
+    user: "${USER_ID:-1000}:${GROUP_ID:-1000}"
+
+  runtime:
+    image: openaa-runtime:1.0.0
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.runtime
+      args:
+        USER_ID: ${USER_ID:-1000}
+        GROUP_ID: ${GROUP_ID:-1000}
+    volumes:
+      - .:/workspace
+    user: "${USER_ID:-1000}:${GROUP_ID:-1000}"

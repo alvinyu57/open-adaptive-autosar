@@ -77,22 +77,28 @@ for extra_option in "${EXTRA_CONAN_OPTIONS[@]}"; do
     fi
 done
 
-if [[ ${BUILD_IN_DOCKER} == "True" ]]; then
+if [[ ${BUILD_IN_DOCKER} == "True" && ${IN_DOCKER:-False} == "False" ]]; then
     echo "Building in docker container..."
 
-    USER_ID=$(id -u) GROUP_ID=$(id -g) docker compose up
+    # Filter out --docker from arguments to prevent recursion
+    args=()
+    for arg in "$@"; do
+        if [[ "$arg" != "--docker" ]]; then
+            args+=("$arg")
+        fi
+    done
 
-    docker run --rm \
-        -v "${PROJECT_ROOT}:/workspace" \
-        -w /workspace \
-        openaa-build \
-        bash -lc "
-            ./scripts/build/build.sh $*
-        "
+    export USER_ID=$(id -u)
+    export GROUP_ID=$(id -g)
+    
+    docker compose build build
+    docker compose run --rm -e IN_DOCKER=True build ./scripts/build/build.sh "${args[@]}"
+    exit $?
+fi
 
 
-else
-    echo "Building natively..."
+# Building natively...
+echo "Building natively..."
 
     rm -rf build/${CONAN_BUILD_TYPE}
 
@@ -107,4 +113,3 @@ else
     conan build . --output-folder=build \
         -o *:build_apps=${BUILD_APPS} \
         -o *:build_tests=${BUILD_TESTS}
-fi
