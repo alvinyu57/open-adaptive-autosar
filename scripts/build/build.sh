@@ -78,7 +78,7 @@ for extra_option in "${EXTRA_CONAN_OPTIONS[@]}"; do
     fi
 done
 
-if [[ ${BUILD_IN_DOCKER} == "True" && ${IN_DOCKER:-False} == "False" ]]; then
+if [[ ${BUILD_IN_DOCKER} == "True" ]]; then
     echo "Building in docker container..."
 
     CURRENT_HASH=$(sha256sum "${PROJECT_ROOT}/docker/build.Dockerfile" | awk '{print $1}')

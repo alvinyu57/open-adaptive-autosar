@@ -5,7 +5,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
-if [[ "${1:-}" == "--docker" && "${IN_DOCKER:-}" != "True" ]]; then
+if [[ "${1:-}" == "--docker" ]]; then
     
     command_name=$(basename "$0")
 
@@ -32,7 +32,7 @@ elif find "${PROJECT_ROOT}/tests" "${PROJECT_ROOT}/include" "${PROJECT_ROOT}/src
     needs_rebuild=true
 fi
 
-if [ "${needs_rebuild}" = true ] && [ "${IN_DOCKER:-}" != "True" ]; then
+if [ "${needs_rebuild}" = true ]; then
     echo "core smoke test binary missing or stale, building test target..." >&2
     "${PROJECT_ROOT}/scripts/build/build.sh" --build-tests
 fi

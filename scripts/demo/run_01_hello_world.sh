@@ -5,7 +5,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
-if [[ "${1:-}" == "--docker" && "${IN_DOCKER:-}" != "True" ]]; then
+if [[ "${1:-}" == "--docker" ]]; then
 
     command_name=$(basename "$0")
     
@@ -16,7 +16,7 @@ if [[ "${1:-}" == "--docker" && "${IN_DOCKER:-}" != "True" ]]; then
         -w /workspace \
         openaa-runtime:1.0.0 \
         bash -lc "
-            ./scripts/test/$command_name
+            ./scripts/demo/$command_name
         "
 
     exit $?
