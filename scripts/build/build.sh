@@ -4,13 +4,14 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+ORIGINAL_ARGS=("$@")
 
 CONAN_BUILD_TYPE="Release"
 CONAN_OPTIONS=""
 
 usage() {
     cat <<'EOF'
-Usage: ./build.sh [options]
+Usage: ./scripts/build/build.sh [options]
 
 Options:
     --docker                       Build inside a Docker container
@@ -21,10 +22,10 @@ Options:
     --help                         Show this help message
 
 Examples:
-    ./build.sh --build-apps --build-tests
-    ./build.sh --build-apps --build-tests --docker
-    ./build.sh --build-type Debug
-    ./build.sh --conan-option "-o &:some_other_option=True"
+    ./scripts/build/build.sh --build-apps --build-tests
+    ./scripts/build/build.sh --build-apps --build-tests --docker
+    ./scripts/build/build.sh --build-type Debug
+    ./scripts/build/build.sh --conan-option "-o &:some_other_option=True"
 EOF
 }
 
@@ -80,57 +81,55 @@ done
 if [[ ${BUILD_IN_DOCKER} == "True" ]]; then
     echo "Building in docker container..."
 
-    # check if docker image already exists to avoid unnecessary rebuilds
-    if [[ -n "$(docker images -q openaa-build:latest 2> /dev/null)" ]]; then
-        echo "Docker image 'openaa-build:latest' already exists, skipping build."
-    else
-        echo "Building Docker image 'openaa-build:latest'..."
+    command_name=$(basename "$0")
 
+    CURRENT_HASH=$(sha256sum "${PROJECT_ROOT}/docker/build.Dockerfile" | awk '{print $1}')
+    LAST_HASH=$(cat .dockerfile.hash 2>/dev/null || echo "")
+
+    if [[ "$CURRENT_HASH" != "$LAST_HASH" ]]; then
+        echo "Dockerfile changed, rebuilding..."
+        
         docker build \
             --build-arg USER_ID="$(id -u)" \
             --build-arg GROUP_ID="$(id -g)" \
-            -f "${PROJECT_ROOT}/Dockerfile" \
-            -t openaa-build .
+            -f "${PROJECT_ROOT}/docker/build.Dockerfile" \
+            -t openaa-build:latest .
+
+        echo "$CURRENT_HASH" > .dockerfile.hash
+    else
+        echo "Dockerfile no change, skip build"
     fi
+
+    # Filter out --docker from arguments to prevent recursion
+    args=()
+    for arg in "${ORIGINAL_ARGS[@]}"; do
+        if [[ "$arg" != "--docker" ]]; then
+            args+=("$arg")
+        fi
+    done
 
     docker run --rm \
         -v "${PROJECT_ROOT}:/workspace" \
         -w /workspace \
         openaa-build \
         bash -lc "
-            rm -rf build/${CONAN_BUILD_TYPE} &&
-
-            conan profile detect --force && 
-
-            conan install . --output-folder=build --build=missing \
-                -s build_type=${CONAN_BUILD_TYPE} \
-                -o *:build_apps=${BUILD_APPS} \
-                -o *:build_tests=${BUILD_TESTS} \
-                ${CONAN_OPTIONS} &&
-
-            echo 'Generated preset values:' &&
-            sed -n '/cacheVariables/,/}/p' build/${CONAN_BUILD_TYPE}/generators/CMakePresets.json &&
-
-            conan build . --output-folder=build \
-                -o *:build_apps=${BUILD_APPS} \
-                -o *:build_tests=${BUILD_TESTS}
+            ./scripts/build/$command_name ${args[@]}
         "
-
-
-else
-    echo "Building natively..."
-
-    rm -rf build/${CONAN_BUILD_TYPE}
-
-    conan profile detect --force && 
-
-    conan install . --output-folder=build --build=missing \
-        -s build_type=${CONAN_BUILD_TYPE} \
-        -o *:build_apps=${BUILD_APPS} \
-        -o *:build_tests=${BUILD_TESTS} \
-        ${CONAN_OPTIONS}
     
-    conan build . --output-folder=build \
-        -o *:build_apps=${BUILD_APPS} \
-        -o *:build_tests=${BUILD_TESTS}
+    exit $?
 fi
+
+rm -rf build/${CONAN_BUILD_TYPE}
+
+conan profile detect --force && 
+
+conan install . --output-folder=build --build=missing \
+    -s build_type=${CONAN_BUILD_TYPE} \
+    -o *:build_apps=${BUILD_APPS} \
+    -o *:build_tests=${BUILD_TESTS} \
+    ${CONAN_OPTIONS}
+
+conan build . --output-folder=build \
+    -s build_type=${CONAN_BUILD_TYPE} \
+    -o *:build_apps=${BUILD_APPS} \
+    -o *:build_tests=${BUILD_TESTS}

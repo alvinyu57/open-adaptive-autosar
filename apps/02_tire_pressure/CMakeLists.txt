@@ -36,8 +36,6 @@ target_compile_definitions(openaa_tire_pressure_provider PRIVATE
     OPEN_AA_TIRE_PRESSURE_SERVICE_MANIFEST="${TP_OUTPUT_DIRECTORY}/manifests/service_instance_manifest.json"
 )
 
-target_compile_features(openaa_tire_pressure_provider PRIVATE cxx_std_20)
-
 add_custom_command(
     OUTPUT ${TP_OUTPUT_DIRECTORY}/manifests/app_execution_manifest.json
     COMMAND python3 ${CMAKE_SOURCE_DIR}/scripts/manifests/verify_arxml.py
@@ -104,8 +102,6 @@ target_link_libraries(openaa_tire_pressure_consumer
 target_compile_definitions(openaa_tire_pressure_consumer PRIVATE
     OPEN_AA_TIRE_PRESSURE_SERVICE_MANIFEST="${TP_OUTPUT_DIRECTORY}/manifests/service_instance_manifest.json"
 )
-
-target_compile_features(openaa_tire_pressure_consumer PRIVATE cxx_std_20)
 
 add_dependencies(openaa_tire_pressure_provider openaa_tire_pressure_manifest)
 add_dependencies(openaa_tire_pressure_consumer openaa_tire_pressure_manifest)

@@ -19,14 +19,13 @@ set_target_properties(openaa_core_unit_test PROPERTIES
 
 target_link_libraries(openaa_core_unit_test
     PRIVATE
+        GTest::gtest
         GTest::gtest_main
         ara_com_lib
         ara_core_lib
         ara_exec_lib
         ara_log_lib
 )
-
-target_compile_features(openaa_core_unit_test PRIVATE cxx_std_20)
 
 gtest_discover_tests(
     openaa_core_unit_test

@@ -13,8 +13,6 @@ target_link_libraries(openaa_core_smoke_test
         ara_exec_lib
 )
 
-target_compile_features(openaa_core_smoke_test PRIVATE cxx_std_20)
-
 add_test(
     NAME openaa_core_smoke_test
     COMMAND openaa_core_smoke_test

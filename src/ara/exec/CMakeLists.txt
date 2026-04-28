@@ -25,7 +25,6 @@ target_link_libraries(ara_exec_lib
 
 set_target_properties(ara_exec_lib PROPERTIES OUTPUT_NAME ara_exec)
 
-target_compile_features(ara_exec_lib PUBLIC cxx_std_20)
 
 # ---------------------------------------------------------------------------
 # ara_exec — the Execution Manager process
@@ -50,5 +49,3 @@ target_link_libraries(ara_exec
         ara_exec_lib
         ara_log_lib
 )
-
-target_compile_features(ara_exec PRIVATE cxx_std_20)

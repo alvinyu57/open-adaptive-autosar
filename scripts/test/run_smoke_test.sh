@@ -4,6 +4,22 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+
+if [[ "${1:-}" == "--docker" ]]; then
+    
+    command_name=$(basename "$0")
+
+    docker run --rm \
+        -v "${PROJECT_ROOT}:/workspace" \
+        -w /workspace \
+        openaa-build \
+        bash -lc "
+            ./scripts/test/$command_name
+        "
+
+    exit $?
+fi
+
 BUILD_ROOT="${PROJECT_ROOT}/build/Release"
 TEST_BINARY="${BUILD_ROOT}/tests/openaa_core_smoke_test"
 
