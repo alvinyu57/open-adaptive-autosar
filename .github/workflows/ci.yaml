@@ -96,7 +96,7 @@ jobs:
         with:
           name: lint-reports
           path: |
-            ${LINT_RESULTS_DIR}
+            ${LINT_RESULTS_DIR}/**
           if-no-files-found: warn
 
       - name: Fail workflow when checks fail
