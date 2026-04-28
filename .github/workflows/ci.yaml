@@ -31,7 +31,7 @@ jobs:
         run: docker version
 
       - name: Build project image
-        run: ./scripts/build/build.sh --build-tests --docker
+        run: ./scripts/build/build.sh --build-apps --build-tests --docker
 
       - name: Run clang-format check
         id: clang_format
