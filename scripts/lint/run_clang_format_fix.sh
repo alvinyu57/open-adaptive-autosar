@@ -6,7 +6,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 CONAN_BUILD_TYPE="Release"
 BUILD_DIR="${PROJECT_ROOT}/build/${CONAN_BUILD_TYPE}"
-OUTPUT_FILE_PATH="${BUILD_DIR}/clang-results"
+OUTPUT_FILE_PATH="${BUILD_DIR}/lint-results"
 OUTPUT_FILE="${OUTPUT_FILE_PATH}/clang-format-result.txt"
 
 BUILD_IN_DOCKER="False"
