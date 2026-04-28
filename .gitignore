@@ -2,3 +2,4 @@
 /build-clang-tidy/
 /CMakeUserPresets.json
 .dockerfile.hash
+.codex

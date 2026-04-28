@@ -82,7 +82,7 @@ int main(int argc, char* argv[]) {
                 return;
             }
 
-            auto request_result = proxy.GetLatestByRequest();
+            auto request_result = proxy.GetLatestPressure();
             if (!request_result.HasValue()) {
                 logger.Warn("tire_consumer", "Request/response validation failed");
             }
