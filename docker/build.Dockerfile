@@ -6,6 +6,7 @@ ARG GROUP_ID=1000
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     bash \
+    libgtest-dev \
     build-essential \
     ca-certificates \
     clang-format \
