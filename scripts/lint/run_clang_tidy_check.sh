@@ -6,13 +6,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 CONAN_BUILD_TYPE="Release"
 BUILD_DIR="${PROJECT_ROOT}/build/${CONAN_BUILD_TYPE}"
-OUTPUT_FILE_PATH="${BUILD_DIR}/results"
+OUTPUT_FILE_PATH="${BUILD_DIR}/clang-results"
+OUTPUT_FILE="${OUTPUT_FILE_PATH}/clang-tidy-result.txt"
 
 BUILD_IN_DOCKER="False"
 
 usage() {
     cat <<'EOF'
-Usage: ./run_clang_tidy.sh [options]
+Usage: ./scripts/lint/run_clang_tidy.sh [options]
 
 Options:
     --docker                      Run clang-tidy in a Docker container
@@ -24,7 +25,7 @@ EOF
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --output)
-            OUTPUT_FILE_PATH="$2"
+            OUTPUT_FILE="$2"
             shift 2
             ;;
         --docker)
@@ -65,7 +66,6 @@ if [ ! -f "${BUILD_DIR}/compile_commands.json" ]; then
 fi
 
 mkdir -p "${OUTPUT_FILE_PATH}"
-OUTPUT_FILE="${OUTPUT_FILE_PATH}/clang-tidy-result.txt"
 
 if run-clang-tidy -p "${BUILD_DIR}" \
     -header-filter=".*" \

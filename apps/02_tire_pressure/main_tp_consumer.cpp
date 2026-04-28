@@ -34,7 +34,7 @@ std::string DescribeAlert(const openaa::tire_pressure::TirePressureSample& sampl
 } // namespace
 
 int main(int argc, char* argv[]) {
-    try{
+    try {
         if (!ara::core::Initialize(argc, argv).HasValue()) {
             return 1;
         }
@@ -50,8 +50,8 @@ int main(int argc, char* argv[]) {
         }
 
         if (!execution_client.Value()
-                .ReportExecutionState(ara::exec::ExecutionState::kRunning)
-                .HasValue()) {
+                 .ReportExecutionState(ara::exec::ExecutionState::kRunning)
+                 .HasValue()) {
             return 1;
         }
 
@@ -110,13 +110,11 @@ int main(int argc, char* argv[]) {
 
         proxy.StopSubscription();
         return ara::core::Deinitialize().HasValue() ? 0 : 1;
-    }
-    catch(const ara::core::ErrorCode& error){
+    } catch (const ara::core::ErrorCode& error) {
         std::cerr << "Error: " << error.Message() << '\n';
         return EXIT_FAILURE;
-    }
-    catch(...){
+    } catch (...) {
         std::cerr << "An unexpected error occurred.\n";
         return EXIT_FAILURE;
-    }   
+    }
 }

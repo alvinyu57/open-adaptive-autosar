@@ -40,7 +40,7 @@ public:
                                                          SerializeSample(sample));
     }
 
-    ara::core::Result<void> ProcessNextMethodCall(){
+    ara::core::Result<void> ProcessNextMethodCall() {
         auto request_result = ara::com::runtime::internal::TakeMethodCall(manifest_.method_channel,
                                                                           last_method_sequence_);
         if (!request_result.HasValue()) {

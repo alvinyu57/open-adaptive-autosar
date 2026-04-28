@@ -130,5 +130,6 @@ conan install . --output-folder=build --build=missing \
     ${CONAN_OPTIONS}
 
 conan build . --output-folder=build \
+    -s build_type=${CONAN_BUILD_TYPE} \
     -o *:build_apps=${BUILD_APPS} \
     -o *:build_tests=${BUILD_TESTS}

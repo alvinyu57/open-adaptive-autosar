@@ -95,8 +95,7 @@ public:
         }
 
         try {
-            return ara::com::SamplePtr<TirePressureSample>(
-                new TirePressureSample(*cached_sample_));
+            return ara::com::SamplePtr<TirePressureSample>(new TirePressureSample(*cached_sample_));
         } catch (const std::bad_alloc&) {
             return ara::com::SamplePtr<TirePressureSample>(nullptr);
         }

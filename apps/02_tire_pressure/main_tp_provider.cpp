@@ -54,7 +54,7 @@ std::filesystem::path GetDataDirectory() {
 } // namespace
 
 int main(int argc, char* argv[]) {
-    try{
+    try {
         if (!ara::core::Initialize(argc, argv).HasValue()) {
             return 1;
         }
@@ -70,8 +70,8 @@ int main(int argc, char* argv[]) {
         }
 
         if (!execution_client.Value()
-                .ReportExecutionState(ara::exec::ExecutionState::kRunning)
-                .HasValue()) {
+                 .ReportExecutionState(ara::exec::ExecutionState::kRunning)
+                 .HasValue()) {
             return 1;
         }
 
@@ -119,8 +119,7 @@ int main(int argc, char* argv[]) {
             if (one_way_result.HasValue()) {
                 if (const auto& opt = one_way_result.Value(); opt.has_value()) {
                     logger.Warn("tire_provider",
-                        std::string("Received fire-and-forget notification: ") +
-                        *opt);
+                                std::string("Received fire-and-forget notification: ") + *opt);
                 }
             }
 
@@ -130,18 +129,17 @@ int main(int argc, char* argv[]) {
                         "{FL: " + std::to_string(sample.readings[0].pressure_kpa) +
                             "kPa, FR: " + std::to_string(sample.readings[1].pressure_kpa) +
                             "kPa, RL: " + std::to_string(sample.readings[2].pressure_kpa) +
-                            "kPa, RR: " + std::to_string(sample.readings[3].pressure_kpa) + "kPa }");
+                            "kPa, RR: " + std::to_string(sample.readings[3].pressure_kpa) +
+                            "kPa }");
             std::this_thread::sleep_for(std::chrono::milliseconds(250));
         }
 
         (void)skeleton.StopOfferService();
         return ara::core::Deinitialize().HasValue() ? 0 : 1;
-    }
-    catch(const ara::core::ErrorCode& error){
+    } catch (const ara::core::ErrorCode& error) {
         std::cerr << "Error: " << error.Message() << '\n';
         return EXIT_FAILURE;
-    }
-    catch(...){
+    } catch (...) {
         std::cerr << "An unexpected error occurred.\n";
         return EXIT_FAILURE;
     }

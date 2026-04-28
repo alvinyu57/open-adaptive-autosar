@@ -38,12 +38,7 @@ jobs:
         continue-on-error: true
         run: |
           mkdir -p "${LINT_RESULTS_DIR}"
-          docker run --rm \
-            -v "${GITHUB_WORKSPACE}:/workspace" \
-            -w /workspace \
-            openaa-build \
-            bash -lc "./scripts/lint/run_clang_format_check.sh" \
-            2>&1 | tee "${LINT_RESULTS_DIR}/clang-format.log"
+          ./scripts/lint/run_clang_format_check.sh --docker --output "${LINT_RESULTS_DIR}/clang-format-result.txt" 2>&1 | tee "${LINT_RESULTS_DIR}/clang-format.log"
           exit "${PIPESTATUS[0]}"
 
       - name: Run clang-tidy check
@@ -51,12 +46,7 @@ jobs:
         continue-on-error: true
         run: |
           mkdir -p "${LINT_RESULTS_DIR}"
-          docker run --rm \
-            -v "${GITHUB_WORKSPACE}:/workspace" \
-            -w /workspace \
-            openaa-build \
-            bash -lc "./scripts/lint/run_clang_tidy_check.sh --output ${LINT_RESULTS_DIR}" \
-            2>&1 | tee "${LINT_RESULTS_DIR}/clang-tidy.log"
+          ./scripts/lint/run_clang_tidy_check.sh --docker --output "${LINT_RESULTS_DIR}/clang-tidy-result.txt" 2>&1 | tee "${LINT_RESULTS_DIR}/clang-tidy.log"
           exit "${PIPESTATUS[0]}"
 
       - name: Write job summary
