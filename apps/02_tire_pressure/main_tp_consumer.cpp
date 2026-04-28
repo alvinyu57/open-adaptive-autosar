@@ -58,7 +58,7 @@ int main(int argc, char* argv[]) {
         auto manifest_result =
             openaa::tire_pressure::LoadServiceManifest(OPEN_AA_TIRE_PRESSURE_SERVICE_MANIFEST);
         if (!manifest_result.HasValue()) {
-            logger.Error("tire_consumer", "Failed to load service_instance_manifest.arxml");
+            logger.Error("tire_consumer", "Failed to load service_instance_manifest.json");
             return 1;
         }
 
