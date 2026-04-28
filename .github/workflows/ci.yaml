@@ -96,9 +96,7 @@ jobs:
         with:
           name: lint-reports
           path: |
-            lint-results/clang-format.log
-            lint-results/clang-tidy.log
-            build-clang-tidy/results/clang-tidy-result.txt
+            ${LINT_RESULTS_DIR}/**
           if-no-files-found: warn
 
       - name: Fail workflow when checks fail
