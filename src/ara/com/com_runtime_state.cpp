@@ -91,7 +91,7 @@ bool CopyString(std::array<char, N>& destination, std::string_view source) {
     return true;
 }
 
-std::string_view ViewString(const auto& source) {
+template <typename T> std::string_view ViewString(const T& source) {
     return std::string_view(source.data(), ::strnlen(source.data(), source.size()));
 }
 

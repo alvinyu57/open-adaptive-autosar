@@ -34,79 +34,87 @@ std::string DescribeAlert(const openaa::tire_pressure::TirePressureSample& sampl
 } // namespace
 
 int main(int argc, char* argv[]) {
-    if (!ara::core::Initialize(argc, argv).HasValue()) {
-        return 1;
-    }
-
-    ara::log::Logger logger(std::cout);
-    std::atomic<bool> keep_running{true};
-    auto execution_client = ara::exec::ExecutionClient::Create([&keep_running, &logger]() {
-        logger.Warn("tire_consumer", "Received SIGTERM");
-        keep_running.store(false);
-    });
-    if (!execution_client.HasValue()) {
-        return 1;
-    }
-
-    if (!execution_client.Value()
-             .ReportExecutionState(ara::exec::ExecutionState::kRunning)
-             .HasValue()) {
-        return 1;
-    }
-
-    auto manifest_result =
-        openaa::tire_pressure::LoadServiceManifest(OPEN_AA_TIRE_PRESSURE_SERVICE_MANIFEST);
-    if (!manifest_result.HasValue()) {
-        logger.Error("tire_consumer", "Failed to load service_instance_manifest.json");
-        return 1;
-    }
-
-    openaa::tire_pressure::TirePressureConsumerProxy proxy(manifest_result.Value());
-    bool connected = false;
-    for (int attempt = 0; attempt < 20 && keep_running.load(); ++attempt) {
-        if (proxy.Connect().HasValue()) {
-            connected = true;
-            break;
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    }
-    if (!connected) {
-        logger.Error("tire_consumer", "Failed to connect to tire pressure service");
-        return 1;
-    }
-
-    auto subscribe_result = proxy.Subscribe([&logger, &proxy]() {
-        auto sample = proxy.GetSample();
-        if (!sample) {
-            return;
+    try {
+        if (!ara::core::Initialize(argc, argv).HasValue()) {
+            return 1;
         }
 
-        auto request_result = proxy.GetLatestPressure();
-        if (!request_result.HasValue()) {
-            logger.Warn("tire_consumer", "Request/response validation failed");
+        ara::log::Logger logger(std::cout);
+        std::atomic<bool> keep_running{true};
+        auto execution_client = ara::exec::ExecutionClient::Create([&keep_running, &logger]() {
+            logger.Warn("tire_consumer", "Received SIGTERM");
+            keep_running.store(false);
+        });
+        if (!execution_client.HasValue()) {
+            return 1;
         }
 
-        if (openaa::tire_pressure::HasLowTirePressure(*sample, 100)) {
-            logger.Warn("tire_consumer",
-                        std::string("LOW TIRE PRESSURE ALERT: ") + DescribeAlert(*sample));
-            (void)proxy.SendLowPressureAlarm(DescribeAlert(*sample));
-            return;
+        if (!execution_client.Value()
+                 .ReportExecutionState(ara::exec::ExecutionState::kRunning)
+                 .HasValue()) {
+            return 1;
         }
 
-        logger.Info("tire_consumer", "All tire pressures are within the safe range");
-    });
-    if (!subscribe_result.HasValue()) {
-        logger.Error("tire_consumer", "Failed to subscribe to tire pressure updates");
-        return 1;
+        auto manifest_result =
+            openaa::tire_pressure::LoadServiceManifest(OPEN_AA_TIRE_PRESSURE_SERVICE_MANIFEST);
+        if (!manifest_result.HasValue()) {
+            logger.Error("tire_consumer", "Failed to load service_instance_manifest.json");
+            return 1;
+        }
+
+        openaa::tire_pressure::TirePressureConsumerProxy proxy(manifest_result.Value());
+        bool connected = false;
+        for (int attempt = 0; attempt < 20 && keep_running.load(); ++attempt) {
+            if (proxy.Connect().HasValue()) {
+                connected = true;
+                break;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        }
+        if (!connected) {
+            logger.Error("tire_consumer", "Failed to connect to tire pressure service");
+            return 1;
+        }
+
+        auto subscribe_result = proxy.Subscribe([&logger, &proxy]() {
+            auto sample = proxy.GetSample();
+            if (!sample) {
+                return;
+            }
+
+            auto request_result = proxy.GetLatestByRequest();
+            if (!request_result.HasValue()) {
+                logger.Warn("tire_consumer", "Request/response validation failed");
+            }
+
+            if (openaa::tire_pressure::HasLowTirePressure(*sample, 100)) {
+                logger.Warn("tire_consumer",
+                            std::string("LOW TIRE PRESSURE ALERT: ") + DescribeAlert(*sample));
+                (void)proxy.SendLowPressureAlarm(DescribeAlert(*sample));
+                return;
+            }
+
+            logger.Info("tire_consumer", "All tire pressures are within the safe range");
+        });
+        if (!subscribe_result.HasValue()) {
+            logger.Error("tire_consumer", "Failed to subscribe to tire pressure updates");
+            return 1;
+        }
+
+        auto managed_execution_client = std::move(execution_client.Value());
+        (void)managed_execution_client;
+
+        for (int seconds_waited = 0; keep_running.load() && seconds_waited < 60; ++seconds_waited) {
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
+
+        proxy.StopSubscription();
+        return ara::core::Deinitialize().HasValue() ? 0 : 1;
+    } catch (const ara::core::ErrorCode& error) {
+        std::cerr << "Error: " << error.Message() << '\n';
+        return EXIT_FAILURE;
+    } catch (...) {
+        std::cerr << "An unexpected error occurred.\n";
+        return EXIT_FAILURE;
     }
-
-    auto managed_execution_client = std::move(execution_client.Value());
-    (void)managed_execution_client;
-
-    for (int seconds_waited = 0; keep_running.load() && seconds_waited < 60; ++seconds_waited) {
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-    }
-
-    proxy.StopSubscription();
-    return ara::core::Deinitialize().HasValue() ? 0 : 1;
 }

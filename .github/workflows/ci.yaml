@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      LINT_RESULTS_DIR: lint-results
+      LINT_RESULTS_DIR: build/Release/lint-results
 
     steps:
       - name: Checkout repository
@@ -33,19 +33,14 @@ jobs:
         run: docker version
 
       - name: Build project image
-        run: docker build --build-arg USER_ID="$(id -u)" --build-arg GROUP_ID="$(id -g)" -f Dockerfile -t openaa-build .
+        run: ./scripts/build/build.sh --build-apps --build-tests --docker
 
       - name: Run clang-format check
         id: clang_format
         continue-on-error: true
         run: |
           mkdir -p "${LINT_RESULTS_DIR}"
-          docker run --rm \
-            -v "${GITHUB_WORKSPACE}:/workspace" \
-            -w /workspace \
-            openaa-build \
-            bash -lc "./scripts/lint/run_clang_format_check.sh" \
-            2>&1 | tee "${LINT_RESULTS_DIR}/clang-format.log"
+          ./scripts/lint/run_clang_format_check.sh --docker --output "${LINT_RESULTS_DIR}/clang-format-result.txt" 2>&1 | tee "${LINT_RESULTS_DIR}/clang-format.log"
           exit "${PIPESTATUS[0]}"
 
       - name: Run clang-tidy check
@@ -53,12 +48,7 @@ jobs:
         continue-on-error: true
         run: |
           mkdir -p "${LINT_RESULTS_DIR}"
-          docker run --rm \
-            -v "${GITHUB_WORKSPACE}:/workspace" \
-            -w /workspace \
-            openaa-build \
-            bash -lc "./scripts/lint/run_clang_tidy_check.sh --output ${LINT_RESULTS_DIR}" \
-            2>&1 | tee "${LINT_RESULTS_DIR}/clang-tidy.log"
+          ./scripts/lint/run_clang_tidy_check.sh --docker --output "${LINT_RESULTS_DIR}/clang-tidy-result.txt" 2>&1 | tee "${LINT_RESULTS_DIR}/clang-tidy.log"
           exit "${PIPESTATUS[0]}"
 
       - name: Write job summary
@@ -74,14 +64,14 @@ jobs:
             echo
           } >> "${GITHUB_STEP_SUMMARY}"
 
-          if [ -f "${LINT_RESULTS_DIR}/clang-format.log" ]; then
+          if [ -f "${LINT_RESULTS_DIR}/clang-format-result.txt" ]; then
             {
-              echo "### clang-format Log"
+              echo "### clang-format Result"
               echo
               echo "<details><summary>Show clang-format output</summary>"
               echo
               echo '```text'
-              sed -n '1,120p' "${LINT_RESULTS_DIR}/clang-format.log"
+              sed -n '1,120p' "${LINT_RESULTS_DIR}/clang-format-result.txt"
               echo '```'
               echo "</details>"
               echo
@@ -108,9 +98,7 @@ jobs:
         with:
           name: lint-reports
           path: |
-            lint-results/clang-format.log
-            lint-results/clang-tidy.log
-            build-clang-tidy/results/clang-tidy-result.txt
+            ${{ env.LINT_RESULTS_DIR }}/**
           if-no-files-found: warn
 
       - name: Fail workflow when checks fail

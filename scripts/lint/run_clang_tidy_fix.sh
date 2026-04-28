@@ -4,22 +4,33 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
-BUILD_DIR="${PROJECT_ROOT}/build/Release"
+CONAN_BUILD_TYPE="Release"
+BUILD_DIR="${PROJECT_ROOT}/build/${CONAN_BUILD_TYPE}"
+OUTPUT_FILE_PATH="${BUILD_DIR}/lint-results"
+OUTPUT_FILE="${OUTPUT_FILE_PATH}/clang-tidy-result.txt"
+
+BUILD_IN_DOCKER="False"
 
 usage() {
     cat <<'EOF'
-Usage: ./run_clang_tidy_fix.sh [options]
+Usage: ./scripts/lint/run_clang_tidy_fix.sh [options]
 
 Options:
+    --docker                      Run clang-tidy in a Docker container
     --help                        Show this help message
+    --output <file>               Specify output file for clang-tidy results (default: build/Release/results/clang-tidy-result.txt)
 EOF
 }
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --output)
-            OUTPUT_FILE_PATH="$2"
+            OUTPUT_FILE="$2"
             shift 2
+            ;;
+        --docker)
+            BUILD_IN_DOCKER="True"
+            shift
             ;;
         --help)
             usage
@@ -33,10 +44,28 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+if [[ ${BUILD_IN_DOCKER} == "True" ]]; then
+    echo "Running clang-tidy in Docker container..."
+    
+    command_name=$(basename "$0")
+
+    docker run \
+        --rm \
+        -v "${PROJECT_ROOT}:/workspace" \
+        -w /workspace \
+        openaa-build \
+        bash -lc "\
+            ./scripts/lint/$command_name
+        "
+    exit $?
+fi
+
 if [ ! -f "${BUILD_DIR}/compile_commands.json" ]; then
-    echo "Building project to generate compile_commands.json..."
+    echo "Generating compile_commands.json..."
     "${PROJECT_ROOT}/scripts/build/build.sh" --build-tests
 fi
+
+mkdir -p "${OUTPUT_FILE_PATH}"
 
 echo "Starting clang-tidy fix..."
 cd "${PROJECT_ROOT}"

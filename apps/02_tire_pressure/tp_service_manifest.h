@@ -49,9 +49,8 @@ inline std::string ResolveManifestPath(const std::string& manifest_path) {
 }
 
 inline ara::core::Result<TirePressureServiceManifest>
-LoadServiceManifest(const std::string& manifest_path) noexcept {
-    const std::string resolved_path = ResolveManifestPath(manifest_path);
-    std::ifstream input(resolved_path);
+LoadServiceManifest(const std::string& manifest_path) {
+    std::ifstream input(manifest_path);
     if (!input.is_open()) {
         return ara::core::Result<TirePressureServiceManifest>{
             ara::core::MakeErrorCode(ara::core::CoreErrc::kNoSuchElement)};

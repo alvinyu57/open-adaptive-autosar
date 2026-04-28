@@ -4,20 +4,15 @@ ARG DEBIAN_FRONTEND=noninteractive
 ARG USER_ID=1000
 ARG GROUP_ID=1000
 
+# Install minimal runtime dependencies and utilities used in scripts (like psmisc for killall)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     bash \
-    build-essential \
     ca-certificates \
-    clang-format \
-    clang-tidy \
-    cmake \
-    git \
-    ninja-build \
+    psmisc \
+    iputils-ping \
+    net-tools \
     python3 \
-    python3-pip \
     && rm -rf /var/lib/apt/lists/*
-
-RUN pip3 install --break-system-packages "conan>=2.0,<3.0" lxml
 
 RUN BUILD_GROUP="$(getent group "${GROUP_ID}" | cut -d: -f1 || true)" \
     && if [ -z "${BUILD_GROUP}" ]; then \

@@ -40,8 +40,8 @@ public:
                                                          SerializeSample(sample));
     }
 
-    ara::core::Result<void> ProcessNextMethodCall() noexcept {
-        auto request_result = ara::com::runtime::internal::TakeMethodCall(ara::com::runtime::internal::BindingType::kIpc, manifest_.method_channel,
+    ara::core::Result<void> ProcessNextMethodCall() {
+        auto request_result = ara::com::runtime::internal::TakeMethodCall(manifest_.method_channel,
                                                                           last_method_sequence_);
         if (!request_result.HasValue()) {
             return ara::core::Result<void>{request_result.Error()};
@@ -50,7 +50,17 @@ public:
             return ara::core::Result<void>{};
         }
 
-        const auto& request = *request_result.Value();
+        if (!request_result.HasValue()) {
+            return ara::core::Result<void>{request_result.Error()};
+        }
+
+        const auto& opt = request_result.Value();
+        if (!opt.has_value()) {
+            return ara::core::Result<void>{};
+        }
+
+        const auto& request = *opt;
+
         if (request.payload.View() == "GetLatestPressure") {
             const auto response = SerializeSample(latest_sample_.value_or(TirePressureSample{}));
             return ara::com::runtime::internal::SendMethodResponse(
@@ -61,7 +71,7 @@ public:
             ara::com::runtime::internal::BindingType::kIpc, manifest_.method_channel, request.correlation_id, "{}");
     }
 
-    ara::core::Result<std::optional<std::string>> ProcessNextFireAndForget() noexcept {
+    ara::core::Result<std::optional<std::string>> ProcessNextFireAndForget() {
         auto one_way_result = ara::com::runtime::internal::TakeFireAndForget(
             ara::com::runtime::internal::BindingType::kIpc, manifest_.fire_and_forget_channel, last_fire_and_forget_sequence_);
         if (!one_way_result.HasValue()) {
@@ -71,7 +81,16 @@ public:
             return ara::core::Result<std::optional<std::string>>{std::optional<std::string>{}};
         }
 
-        const auto parsed = DeserializeFireAndForgetMessage(one_way_result.Value()->View());
+        if (!one_way_result.HasValue()) {
+            return ara::core::Result<std::optional<std::string>>{std::optional<std::string>{}};
+        }
+
+        const auto& opt = one_way_result.Value();
+        if (!opt) {
+            return ara::core::Result<std::optional<std::string>>{std::optional<std::string>{}};
+        }
+
+        const auto parsed = DeserializeFireAndForgetMessage(opt->View());
         if (!parsed.has_value()) {
             return ara::core::Result<std::optional<std::string>>{std::optional<std::string>{}};
         }

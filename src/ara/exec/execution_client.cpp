@@ -100,12 +100,10 @@ ara::core::Result<void> ExecutionClient::ReportExecutionState(ExecutionState sta
 
         const std::string payload =
             "pid=" + std::to_string(getpid()) + ";process=" + process_name + ";state=Running";
-        const auto result = sendto(socket_fd,
-                                   payload.data(),
-                                   payload.size(),
-                                   0,
-                                   std::bit_cast<const sockaddr*>(&address),
-                                   sizeof(address));
+        const void* address_void = static_cast<const void*>(&address);
+        const auto* address_ptr = static_cast<const sockaddr*>(address_void);
+        const auto result =
+            sendto(socket_fd, payload.data(), payload.size(), 0, address_ptr, sizeof(address));
         close(socket_fd);
         if (result == -1) {
             return ara::core::Result<void>{MakeErrorCode(ExecErrc::kNoCommunication)};
