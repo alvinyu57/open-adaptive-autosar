@@ -66,6 +66,21 @@ add_custom_command(
     DEPENDS ${CMAKE_SOURCE_DIR}/src/manifests/execution_manifest.arxml
 )
 
+set(ENABLE_MULTIPLE_ROUTING_MANAGERS OFF CACHE BOOL "vsomeip" FORCE)
+set(ENABLE_SIGNAL_HANDLING OFF CACHE BOOL "vsomeip" FORCE)
+set(TEST_IP_MASTER OFF CACHE BOOL "vsomeip" FORCE)
+set(TEST_IP_SLAVE OFF CACHE BOOL "vsomeip" FORCE)
+set(Boost_VERSION_MACRO 108300)
+add_subdirectory(third_party/vsomeip)
+
+# Bypass vsomeip's strict -Werror for specific warnings that fail on newer GCC + Boost
+set(VSOMEIP_TARGETS vsomeip3 vsomeip3-internal vsomeip3-sd vsomeip3-sd-internal vsomeip3-e2e vsomeip3-e2e-internal)
+foreach(target ${VSOMEIP_TARGETS})
+    if(TARGET ${target})
+        target_compile_options(${target} PRIVATE "-Wno-error=maybe-uninitialized")
+    endif()
+endforeach()
+
 add_subdirectory(src)
 
 if(OPEN_AA_BUILD_APPS)

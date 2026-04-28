@@ -18,14 +18,9 @@ public:
     explicit TirePressureConsumerProxy(TirePressureServiceManifest manifest)
         : manifest_(std::move(manifest)) {}
 
-    ~TirePressureConsumerProxy() noexcept {
+    ~TirePressureConsumerProxy() {
         StopSubscription();
     }
-
-    TirePressureConsumerProxy(const TirePressureConsumerProxy&) = delete;
-    TirePressureConsumerProxy& operator=(const TirePressureConsumerProxy&) = delete;
-    TirePressureConsumerProxy(TirePressureConsumerProxy&&) = default;
-    TirePressureConsumerProxy& operator=(TirePressureConsumerProxy&&) = default;
 
     ara::core::Result<void> Connect() noexcept {
         auto resolve_result = ara::com::runtime::ResolveInstanceIDs(manifest_.instance_specifier);
@@ -76,17 +71,11 @@ public:
 
     ara::core::Result<std::optional<TirePressureSample>> GetNewSample() noexcept {
         auto event_result = ara::com::runtime::internal::GetNewEvent(
-            ara::com::runtime::internal::BindingType::kIpc, manifest_.event_channel,
-            last_event_sequence_);
-        if (!event_result.HasValue()) {
-            return ara::core::Result<std::optional<TirePressureSample>>{event_result.Error()};
-        }
-
-        if (event_result.Value().has_value()) {
+            ara::com::runtime::internal::BindingType::kSomeIp, manifest_.event_channel, last_event_sequence_);
+        if (event_result.HasValue() && event_result.Value().has_value()) {
             auto sample = DeserializeSample(event_result.Value()->View());
             return ara::core::Result<std::optional<TirePressureSample>>{std::move(sample)};
         }
-
         return ara::core::Result<std::optional<TirePressureSample>>{std::nullopt};
     }
 
@@ -103,18 +92,13 @@ public:
             return ara::com::SamplePtr<TirePressureSample>(nullptr);
         }
 
-        try {
-            return ara::com::SamplePtr<TirePressureSample>(new TirePressureSample(*cached_sample_));
-        } catch (const std::bad_alloc&) {
-            return ara::com::SamplePtr<TirePressureSample>(nullptr);
-        }
+        return ara::com::SamplePtr<TirePressureSample>(new TirePressureSample(*cached_sample_));
     }
 
     ara::core::Result<TirePressureSample> GetLatestPressure(
         std::chrono::milliseconds timeout = std::chrono::milliseconds(500)) noexcept {
         auto method_result = ara::com::runtime::internal::CallMethod(
-            ara::com::runtime::internal::BindingType::kIpc, manifest_.method_channel,
-            SerializeMethodRequest("GetLatestPressure"), timeout);
+            ara::com::runtime::internal::BindingType::kSomeIp, manifest_.method_channel, "GetLatestPressure", timeout);
         if (!method_result.HasValue()) {
             return ara::core::Result<TirePressureSample>{method_result.Error()};
         }
@@ -131,7 +115,7 @@ public:
     ara::core::Result<void>
     SendLowPressureAlarm(std::string_view alert_message) noexcept {
         return ara::com::runtime::internal::SendFireAndForget(
-            ara::com::runtime::internal::BindingType::kIpc, manifest_.fire_and_forget_channel,
+            ara::com::runtime::internal::BindingType::kSomeIp, manifest_.fire_and_forget_channel,
             SerializeFireAndForgetMessage("Alert", alert_message));
     }
 

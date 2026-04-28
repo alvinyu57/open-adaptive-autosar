@@ -205,6 +205,18 @@ class ARXMLConverter:
                     fire_and_forget_deployment, 'ar:SHORT-NAME') if fire_and_forget_deployment is not None else '',
                 'fireAndForgetChannel': self._get_admin_sd(
                     fire_and_forget_deployment, 'OPENAA', 'CHANNEL') if fire_and_forget_deployment is not None else '',
+                'someipServiceId': self._get_admin_sd(
+                    service_deployment, 'OPENAA', 'SOMEIP-SERVICE-ID'),
+                'someipInstanceId': self._get_admin_sd(
+                    instance_element, 'OPENAA', 'SOMEIP-INSTANCE-ID') if instance_element is not None else '',
+                'someipEventId': self._get_admin_sd(
+                    event_deployment, 'OPENAA', 'SOMEIP-EVENT-ID') if event_deployment is not None else '',
+                'someipEventGroupId': self._get_admin_sd(
+                    event_deployment, 'OPENAA', 'SOMEIP-EVENTGROUP-ID') if event_deployment is not None else '',
+                'someipMethodId': self._get_admin_sd(
+                    request_response_deployment, 'OPENAA', 'SOMEIP-METHOD-ID') if request_response_deployment is not None else '',
+                'someipFireAndForgetId': self._get_admin_sd(
+                    fire_and_forget_deployment, 'OPENAA', 'SOMEIP-METHOD-ID') if fire_and_forget_deployment is not None else '',
             }
         }
     
