@@ -714,8 +714,12 @@ private:
                       report_socket_path_.c_str());
 
         unlink(report_socket_path_.c_str());
+
+        const void* address_void = static_cast<const void*>(&address);
+        const auto* address_ptr = static_cast<const sockaddr*>(address_void);
+
         if (bind(report_socket_fd_,
-                 reinterpret_cast<const sockaddr*>(&address),
+                 address_ptr,
                  static_cast<socklen_t>(offsetof(sockaddr_un, sun_path) +
                                         report_socket_path_.size() + 1U)) == -1) {
             logger_.Error("OPENAA_EM",
